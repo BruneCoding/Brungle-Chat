@@ -44,6 +44,8 @@
   --a37fdf-15: rgba(163, 121, 223, 0.15);
   --a37fdf-25: rgba(163, 121, 223, 0.25);
   --a37fdf-85: rgba(163, 121, 223, 0.85);
+  --312e48: #312e48;
+  --5b5c67: #5b5c67;
 }
 
 input {
@@ -685,6 +687,19 @@ input::placeholder {
   border-radius: 50%;
 }
 
+.top-area-control {
+  position: absolute;
+  top: 0;
+  right: 20px;
+  height: 64px;
+  min-width: 300px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: right;
+  margin-right: 12.5px;
+  background: red;
+}
 .top-area-cont {
   position: absolute;
   top: 0;
@@ -1681,6 +1696,7 @@ chaters {
 }
 
 .devtag {
+  pointer: help;
   color: var(--red-accent);
   font-weight: 500;
   margin-left: 0px;
@@ -1689,7 +1705,7 @@ chaters {
 }
 /* Message enter animation */
 .message-animation-enter {
-  animation: messageEnter 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: messageEnter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   transform-origin: bottom;
   opacity: 0;
 }
@@ -1699,8 +1715,79 @@ chaters {
     transform: scale(0.9) translateY(20px);
     opacity: 0.5;
   }
+  90% {
+    transform: scale(1.05) trasnalteY(-2px);
+  }
   100% {
     transform: scale(1) translateY(0);
     opacity: 1;
   }
+}
+
+#member-control-panel {
+  z-index: 9999;
+  background: transparent !important;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  opacity: 0;
+}
+
+#admin-control-panel {
+  z-index: 99999;
+  background: transparent !important;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  opacity: 1;
+}
+
+.chatControlBtn {
+  border-radius: 50%;
+  height: 50px;
+  background: var(--input-bg);
+  width: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #eaeaea;
+}
+
+.chatControlBtn i {
+  scale: 1.05;
+}
+
+.chatControlMainBtn {
+  background: var(--purple-accent);
+  opacity: 0.7;
+  scale: 1.02;
+  margin-left: -5px;
+  transition: all 0.3s ease;
+}
+
+.chatControlMainBtn:hover,
+.chatControlbtn:hover {
+  scale: 1.05;
+  opacity: 1;
+}
+
+#member-block-chat,
+#group-chat-members,
+#group-chat-user-management,
+#group-chat-members-admin {
+  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transform: translateX(100px);
+}
+
+.slide-in {
+  transform: translateX(0px) !important;
+  opacity: 1 !important;
+}
+
+.slide-in-admin {
+  transform: translateX(0px) !important;
+  opacity: 1 !important;
+  transition: all 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
 }
