@@ -105,6 +105,16 @@
             </div>
             <h1 id="current-chat-name">Global Chat</h1>
           </div>
+          <div class="top-area-control" id="member-control-panel">
+            <div class="chatControlBtn" id="group-chat-members" onclick="memberSortoutBtn()"><i class="fa-solid fa-user"></i></div>
+            <div class="chatControlBtn" id="member-block-chat" onclick="memberBlockChat()"><i class="fa-solid fa-shield"></i></div>
+            <div class="chatControlBtn chatControlMainBtn" id="member-control-main" onclick="expandControlbar()"><i class="fa-solid fa-bars"></i></div>
+          </div>
+          <div class="top-area-control" id="admin-control-panel">
+            <div class="chatControlBtn" id="group-chat-members-admin" onclick="groupChatSettings()"><i class="fa-solid fa-gears"></i></div>
+            <div class="chatControlBtn" id="group-chat-user-management" onclick="addUserGroupAdmin()"><i class="fa-solid fa-user-plus"></i></div>
+            <div class="chatControlBtn chatControlMainBtn" id="admin-control-main" onclick="expandControlbarAdmin()"><i class="fa-solid fa-bars"></i></div>
+          </div>
         </div>
 
         <div class="scroll-bg">
