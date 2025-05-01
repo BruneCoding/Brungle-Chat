@@ -430,16 +430,34 @@ function updateChatProfilePicture() {
         username.substring(0, 1)
       )}&background=722fca&color=fff`;
 
-    changeToPfp.innerHTML = `<img src="${avatarSrc}" alt="${username}'s profile picture" class="chat-pfp">`;
+    changeToPfp.innerHTML = `
+      <div class="img-or-i" id="change-to-pfp">
+        <img src="${avatarSrc}" alt="${username}'s profile picture" class="chat-pfp">
+      </div>
+    `;
   } else if (currentChat.type === "group") {
-    changeToPfp.innerHTML = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(
-      currentChat.name.substring(0, 2)
-    )}&background=4e4376&color=fff" alt="${
-      currentChat.name
-    } group picture" class="chat-pfp">`;
+    db.collection("groups")
+      .doc(currentChat.id)
+      .get()
+      .then((doc) => {
+        if (doc.exists) {
+          const groupData = doc.data();
+          const groupImageSrc =
+            groupData.groupImage ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+              currentChat.name.substring(0, 2)
+            )}&background=4e4376&color=fff`;
+
+          changeToPfp.innerHTML = `
+            <div class="img-or-i" id="change-to-pfp">
+              <img src="${groupImageSrc}" alt="${currentChat.name} group picture" class="chat-pfp">
+            </div>
+          `;
+        }
+      });
   }
 }
-// Modify the switchChat function to call this
+
 function switchChat(type, id, name = null) {
   if (currentTypingListener) {
     currentTypingListener();
@@ -452,6 +470,40 @@ function switchChat(type, id, name = null) {
 
   currentChat = { type, id, name: name || id };
   currentChatName.textContent = name || id;
+
+  // Show/hide admin panel based on group ownership
+  const adminPanel = document.getElementById("admin-control-panel");
+  const memberPanel = document.getElementById("member-control-panel");
+
+  if (type === "group") {
+    // Check if current user is the group creator or admin
+    db.collection("groups")
+      .doc(id)
+      .get()
+      .then((doc) => {
+        if (doc.exists) {
+          const groupData = doc.data();
+          const admins = groupData.admins || [groupData.createdBy];
+
+          if (admins.includes(currentUser.uid)) {
+            adminPanel.style.opacity = "1";
+            adminPanel.style.transform = "scale(1)";
+            memberPanel.style.opacity = "0";
+            memberPanel.style.transform = "scale(0)";
+          } else {
+            adminPanel.style.opacity = "0";
+            adminPanel.style.transform = "scale(0)";
+            memberPanel.style.opacity = "1";
+            memberPanel.style.transform = "scale(1)";
+          }
+        }
+      });
+  } else {
+    adminPanel.style.opacity = "0";
+    adminPanel.style.transform = "scale(0)";
+    memberPanel.style.opacity = "1";
+    memberPanel.style.transform = "scale(1)";
+  }
 
   document.querySelectorAll(".personChat").forEach((chat) => {
     chat.classList.remove("active-chat");
@@ -469,9 +521,36 @@ function switchChat(type, id, name = null) {
 
   messagesContainer.innerHTML = "";
 
-  // Update the profile picture based on chat type
-  updateChatProfilePicture();
+  // Check blocked status
+  const chatArea = document.querySelector(".chatArea");
+  const messageInput = document.getElementById("message-input");
+  const sendBtn = document.getElementById("send-btn");
 
+  if (type === "private") {
+    db.collection("blockedChats")
+      .doc([currentUser.uid, id].sort().join("_"))
+      .get()
+      .then((doc) => {
+        if (doc.exists) {
+          chatArea.style.backgroundColor = "rgba(255, 0, 0, 0.1)";
+          messageInput.disabled = true;
+          messageInput.placeholder = "This chat is blocked";
+          sendBtn.disabled = true;
+        } else {
+          chatArea.style.backgroundColor = "";
+          messageInput.disabled = false;
+          messageInput.placeholder = "Type a message...";
+          sendBtn.disabled = false;
+        }
+      });
+  } else {
+    chatArea.style.backgroundColor = "";
+    messageInput.disabled = false;
+    messageInput.placeholder = "Type a message...";
+    sendBtn.disabled = false;
+  }
+
+  updateChatProfilePicture();
   setupMessageListener();
   setupTypingListener();
 }
@@ -594,6 +673,20 @@ async function sendMessage() {
   let text = messageInput.value.trim();
   if (!text) return;
 
+  // Check if chat is blocked
+  if (currentChat.type === "private") {
+    const isBlocked = await db
+      .collection("blockedChats")
+      .doc([currentUser.uid, currentChat.id].sort().join("_"))
+      .get()
+      .then((doc) => doc.exists);
+
+    if (isBlocked) {
+      alert("This chat is blocked. You cannot send messages.");
+      return;
+    }
+  }
+
   isTyping = false;
   updateTypingStatus(false);
   clearTimeout(typingTimeout);
@@ -644,12 +737,9 @@ async function sendMessage() {
         timestamp: new Date()
       },
       true
-    ); // true means this is a new message
+    );
 
-    // Add animation class
     messageElement.classList.add("message-animation-enter");
-
-    // Remove animation class after animation completes
     setTimeout(() => {
       messageElement.classList.remove("message-animation-enter");
     }, 500);
@@ -727,6 +817,30 @@ function displayMessage(message, isNewMessage = true) {
   const isBrune = message.senderUsername === "Brune";
   const devTag = isBrune ? '<span class="devtag">⚡DEV</span>' : "";
 
+  // Check if user is group admin
+  let groupAdminTag = "";
+  if (currentChat.type === "group") {
+    db.collection("groups")
+      .doc(currentChat.id)
+      .get()
+      .then((doc) => {
+        if (doc.exists) {
+          const groupData = doc.data();
+          const admins = groupData.admins || [groupData.createdBy];
+
+          if (admins.includes(message.senderId)) {
+            const adminTagElement = messageDiv.querySelector(".admin-tag");
+            if (adminTagElement) {
+              adminTagElement.innerHTML =
+                '<span class="devtag" title="GROUP ADMIN: ' +
+                message.senderUsername +
+                '">👑 GA</span>';
+            }
+          }
+        }
+      });
+  }
+
   if (message.isHTML) {
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = message.text;
@@ -774,7 +888,9 @@ function displayMessage(message, isNewMessage = true) {
            onerror="this.src='${escapeHtml(
              getDefaultAvatar(message.senderUsername)
            )}'">
-      <h1>${escapeHtml(message.senderUsername || "Unknown")} ${devTag}</h1>
+      <h1>${escapeHtml(
+        message.senderUsername || "Unknown"
+      )} ${devTag} <span class="admin-tag">${groupAdminTag}</span></h1>
     </div>
     <span class="message-time">${timeString} | ${dateString}</span>
   `;
@@ -1852,6 +1968,7 @@ async function createNewGroup() {
     batch.set(groupRef, {
       name: groupName,
       createdBy: currentUser.uid,
+      creatorUsername: pfpUserName.textContent,
       members: allMembers,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -1889,16 +2006,22 @@ function displayGroup(group) {
   groupDiv.classList.add("personChat", "groupChat");
   groupDiv.dataset.groupId = group.id;
 
-  groupDiv.innerHTML = `
-    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(
+  // Use group image if available, otherwise use default avatar
+  const groupImageSrc =
+    group.groupImage ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(
       group.name.substring(0, 2)
-    )}&background=4e4376&color=fff">
+    )}&background=4e4376&color=fff`;
+
+  groupDiv.innerHTML = `
+    <img src="${groupImageSrc}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(
+    group.name.substring(0, 2)
+  )}&background=4e4376&color=fff'">
     <div class="columnizer">
       <h1>${group.name}</h1>
       <h3>Group • ${group.members.length} members</h3>
       <p>Group created</p>
     </div>
-  
   `;
 
   groupDiv.addEventListener("click", () => {
@@ -2088,67 +2211,74 @@ function setupMessagePopup() {
 
   popup.addEventListener("mouseleave", startFadeOut);
 
-function showPopup(x, y, user) {
+  function showPopup(x, y, user) {
     // Adjust styles based on username length
-    const usernameElement = document.getElementById('account-username-popup');
+    const usernameElement = document.getElementById("account-username-popup");
     if (user.username.length > 6) {
-        usernameElement.style.fontSize = '10px';
-        usernameElement.style.marginTop = '10px';
+      usernameElement.style.fontSize = "10px";
+      usernameElement.style.marginTop = "10px";
     } else {
-        usernameElement.style.fontSize = '';
-        usernameElement.style.marginTop = '5px';
+      usernameElement.style.fontSize = "";
+      usernameElement.style.marginTop = "5px";
     }
-    
+
     // Calculate position to ensure popup stays visible
     const popupHeight = 200;
     const popupWidth = 300;
     const windowHeight = window.innerHeight;
     const windowWidth = window.innerWidth;
-    
+
     let topPosition = y + 10;
     let leftPosition = x + 10;
-    
+
     // Adjust if near bottom of screen (minimum 200px from bottom)
     const minBottomMargin = 250;
     const maxTopPosition = windowHeight - popupHeight - minBottomMargin;
-    
+
     if (topPosition > maxTopPosition) {
-        topPosition = maxTopPosition;
+      topPosition = maxTopPosition;
     }
-    
+
     // Adjust if near right edge of screen
     if (leftPosition + popupWidth > windowWidth) {
-        leftPosition = windowWidth - popupWidth - 20;
+      leftPosition = windowWidth - popupWidth - 20;
     }
-    
+
     // Position the popup
     popup.style.left = `${leftPosition}px`;
     popup.style.top = `${topPosition}px`;
-    
+
     // Rest of your popup content setup...
     usernameElement.textContent = user.username;
-    document.getElementById('account-gmail-popup').textContent = `Email: ${user.email || 'No email'}`;
-    document.getElementById('account-img-popup').src = user.profilePhoto || 
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username.substring(0, 1))}&background=722fca&color=fff`;
-    
-    const popupBg = document.getElementById('account-background-popup');
+    document.getElementById("account-gmail-popup").textContent = `Email: ${
+      user.email || "No email"
+    }`;
+    document.getElementById("account-img-popup").src =
+      user.profilePhoto ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        user.username.substring(0, 1)
+      )}&background=722fca&color=fff`;
+
+    const popupBg = document.getElementById("account-background-popup");
     if (user.themeColor) {
-        popupBg.style.backgroundColor = user.themeColor;
-        popupBg.style.backgroundImage = `linear-gradient(135deg, ${user.themeColor}, ${adjustColor(user.themeColor, -20)})`;
+      popupBg.style.backgroundColor = user.themeColor;
+      popupBg.style.backgroundImage = `linear-gradient(135deg, ${
+        user.themeColor
+      }, ${adjustColor(user.themeColor, -20)})`;
     } else {
-        popupBg.style.backgroundColor = '';
-        popupBg.style.backgroundImage = '';
+      popupBg.style.backgroundColor = "";
+      popupBg.style.backgroundImage = "";
     }
-    
-    document.getElementById('account-bio').value = user.bio || '';
-    
-    popup.style.display = 'block';
-    popup.style.opacity = '1';
+
+    document.getElementById("account-bio").value = user.bio || "";
+
+    popup.style.display = "block";
+    popup.style.opacity = "1";
     clearTimeout(fadeTimeout);
-    
+
     startFadeOut();
     messageInput.focus();
-}
+  }
 
   function hidePopup() {
     popup.style.display = "none";
@@ -2202,4 +2332,761 @@ function showPopup(x, y, user) {
     //   hidePopup();
     // }
   });
+}
+
+// For regular members
+function expandControlbar() {
+  const menuMainBtn = document.querySelector("#member-control-main");
+  const menuBlockChat = document.querySelector("#member-block-chat");
+  const menuCheckMember = document.querySelector("#group-chat-members");
+
+  // Toggle animation class
+  const isExpanding = !menuBlockChat.classList.contains("slide-in");
+
+  if (isExpanding) {
+    // Slide in
+    menuBlockChat.classList.add("slide-in");
+    menuCheckMember.classList.add("slide-in");
+    menuMainBtn.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
+  } else {
+    // Slide out
+    menuBlockChat.classList.remove("slide-in");
+    menuCheckMember.classList.remove("slide-in");
+    menuMainBtn.innerHTML = `<i class="fa-solid fa-bars"></i>`;
+  }
+}
+
+// For admins
+function expandControlbarAdmin() {
+  const menuMainBtnAdmin = document.querySelector("#admin-control-main");
+  const menuBlockChatAdmin = document.querySelector(
+    "#group-chat-user-management"
+  );
+  const menuCheckMemberAdmin = document.querySelector(
+    "#group-chat-members-admin"
+  );
+
+  // Toggle animation class
+  const isExpanding = !menuBlockChatAdmin.classList.contains("slide-in-admin");
+
+  if (isExpanding) {
+    // Slide in
+    menuBlockChatAdmin.classList.add("slide-in-admin");
+    menuCheckMemberAdmin.classList.add("slide-in-admin");
+    menuMainBtnAdmin.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
+  } else {
+    // Slide out
+    menuBlockChatAdmin.classList.remove("slide-in-admin");
+    menuCheckMemberAdmin.classList.remove("slide-in-admin");
+    menuMainBtnAdmin.innerHTML = `<i class="fa-solid fa-bars"></i>`;
+  }
+}
+
+function memberSortoutBtn() {
+  alert("Sorry, this feature is CURRENTLY IN DEVELOPMENT!");
+}
+
+let blockedChats = {};
+
+function memberBlockChat() {
+  if (currentChat.type === "global") {
+    alert("You cannot block the global chat");
+    return;
+  }
+
+  const memberBlockBtn = document.getElementById("member-block-chat");
+  const chatArea = document.querySelector(".chatArea");
+  const messageInput = document.getElementById("message-input");
+  const sendBtn = document.getElementById("send-btn");
+  const chatId = currentChat.id;
+
+  const isCurrentlyBlocked = blockedChats[chatId] || false;
+  blockedChats[chatId] = !isCurrentlyBlocked;
+
+  if (blockedChats[chatId]) {
+    // Block the chat
+    memberBlockBtn.style.background = "var(--red-accent)";
+    memberBlockBtn.style.opacity = "1";
+    chatArea.style.backgroundColor = "rgba(255, 0, 0, 0.1)";
+    messageInput.disabled = true;
+    messageInput.placeholder = "This chat is blocked";
+    sendBtn.disabled = true;
+
+    if (currentChat.type === "private") {
+      const chatRef = db
+        .collection("blockedChats")
+        .doc([currentUser.uid, currentChat.id].sort().join("_"));
+
+      // Get usernames for the system message
+      Promise.all([
+        getUsername(currentUser.uid),
+        getUsername(currentChat.id)
+      ]).then(([blockerName, blockedName]) => {
+        // Save blocked state
+        chatRef.set({
+          blockedBy: currentUser.uid,
+          blockedUser: currentChat.id,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Send system message to both users
+        const chatIdForMessages = [currentUser.uid, currentChat.id]
+          .sort()
+          .join("_");
+
+        db.collection("messages").add({
+          text: `${blockerName} has blocked ${blockedName}`,
+          senderId: "system",
+          chatType: "private",
+          chatId: chatIdForMessages,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          isSystemMessage: true
+        });
+      });
+    }
+  } else {
+    // Unblock the chat
+    memberBlockBtn.style.background = "";
+    memberBlockBtn.style.opacity = "";
+    chatArea.style.backgroundColor = "";
+    messageInput.disabled = false;
+    messageInput.placeholder = "Type a message...";
+    sendBtn.disabled = false;
+
+    if (currentChat.type === "private") {
+      const chatRef = db
+        .collection("blockedChats")
+        .doc([currentUser.uid, currentChat.id].sort().join("_"));
+      chatRef.delete();
+
+      // Send unblock system message
+      Promise.all([
+        getUsername(currentUser.uid),
+        getUsername(currentChat.id)
+      ]).then(([blockerName, blockedName]) => {
+        const chatIdForMessages = [currentUser.uid, currentChat.id]
+          .sort()
+          .join("_");
+
+        db.collection("messages").add({
+          text: `${blockerName} has unblocked ${blockedName}`,
+          senderId: "system",
+          chatType: "private",
+          chatId: chatIdForMessages,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          isSystemMessage: true
+        });
+      });
+    }
+  }
+}
+
+// installation code might be a bit off
+
+function checkBlockedChats() {
+  if (currentUser) {
+    // For private chats
+    db.collection("blockedChats")
+      .where("blockedBy", "==", currentUser.uid)
+      .onSnapshot((snapshot) => {
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          blockedChats[data.blockedUser] = true;
+        });
+      });
+
+    // For chats where current user is blocked
+    db.collection("blockedChats")
+      .where("blockedUser", "==", currentUser.uid)
+      .onSnapshot((snapshot) => {
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          blockedChats[data.blockedBy] = true;
+        });
+      });
+  }
+}
+
+function groupChatSettings() {
+  // First check if we're in a group chat
+  if (currentChat.type !== "group") {
+    alert("This feature is only available in group chats");
+    return;
+  }
+
+  // Check if current user is the group admin
+  db.collection("groups")
+    .doc(currentChat.id)
+    .get()
+    .then((doc) => {
+      if (!doc.exists) {
+        alert("Group not found");
+        return;
+      }
+
+      const groupData = doc.data();
+      const currentAdmins = groupData.admins || [groupData.createdBy];
+      if (!currentAdmins.includes(currentUser.uid)) {
+        alert("Only group admins can change settings");
+        return;
+      }
+
+      // User is admin - show options
+      const choice = prompt(
+        `Please choose an option for "${currentChat.name}":\n\n` +
+          `Change Name (press 1)\n` +
+          `Change Group Picture (press 2)\n` +
+          `Group Admins (press 3)\n` +
+          `Delete Group (press 4)`
+      );
+
+      if (choice === "1") {
+        // Change group name
+        const newName = prompt(
+          `Current name: ${currentChat.name}\n\n` +
+            `Enter new name (max 17 characters):`
+        );
+
+        if (!newName || newName.length < 1 || newName.length > 17) {
+          alert("Invalid name. Must be 1-17 characters.");
+          return;
+        }
+
+        // Update in Firestore
+        db.collection("groups")
+          .doc(currentChat.id)
+          .update({
+            name: newName
+          })
+          .then(() => {
+            // Update locally
+            currentChat.name = newName;
+            currentChatName.textContent = newName;
+
+            // Update in contacts list
+            const groupElement = document.querySelector(
+              `.groupChat[data-group-id="${currentChat.id}"] h1`
+            );
+            if (groupElement) {
+              groupElement.textContent = newName;
+            }
+
+            // Send system message
+            db.collection("messages").add({
+              text: `${pfpUserName.textContent} changed the group name to "${newName}"`,
+              senderId: currentUser.uid,
+              senderUsername: pfpUserName.textContent,
+              chatType: "group",
+              chatId: currentChat.id,
+              timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+              isSystemMessage: true
+            });
+
+            alert(`Group name changed to "${newName}"`);
+          })
+          .catch((error) => {
+            console.error("Error updating group name:", error);
+            alert("Failed to update group name");
+          });
+      } else if (choice === "2") {
+        // Change group picture
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "image/*";
+
+        fileInput.onchange = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          // Check if image is too large (limit to 2MB)
+          if (file.size > 2 * 1024 * 1024) {
+            alert("Image too large. Max size is 2MB.");
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+              // Create canvas for cropping/resizing
+              const canvas = document.createElement("canvas");
+              const ctx = canvas.getContext("2d");
+
+              // Size for profile picture (assuming 200x200)
+              const size = Math.min(img.width, img.height);
+              canvas.width = 200;
+              canvas.height = 200;
+
+              // Crop to center and resize
+              ctx.drawImage(
+                img,
+                (img.width - size) / 2,
+                (img.height - size) / 2,
+                size,
+                size,
+                0,
+                0,
+                200,
+                200
+              );
+
+              const croppedImageUrl = canvas.toDataURL("image/jpeg", 0.9);
+
+              // Update in Firestore
+              db.collection("groups")
+                .doc(currentChat.id)
+                .update({
+                  groupImage: croppedImageUrl
+                })
+                .then(() => {
+                  // Send system message to notify everyone
+                  db.collection("messages").add({
+                    text: `${pfpUserName.textContent} changed the group picture`,
+                    senderId: currentUser.uid,
+                    senderUsername: pfpUserName.textContent,
+                    chatType: "group",
+                    chatId: currentChat.id,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    isSystemMessage: true
+                  });
+
+                  alert("Group picture updated successfully!");
+                })
+                .catch((error) => {
+                  console.error("Error updating group picture:", error);
+                  alert("Failed to update group picture");
+                });
+            };
+            img.src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+        };
+
+        fileInput.click();
+      } else if (choice === "3") {
+        // Group Admins submenu
+        const adminChoice = prompt(
+          `Group Admins for "${currentChat.name}":\n\n` +
+            `List group admins (press 1)\n` +
+            `Add Group Admin (press 2)\n` +
+            `Remove Group Admin (press 3)`
+        );
+
+        if (adminChoice === "1") {
+          // List group admins
+          db.collection("users")
+            .where("uid", "in", groupData.admins || [groupData.createdBy])
+            .get()
+            .then((querySnapshot) => {
+              let adminList = "Group Admins:\n\n";
+              querySnapshot.forEach((doc) => {
+                adminList += `- ${doc.data().username}\n`;
+              });
+              alert(adminList);
+            })
+            .catch((error) => {
+              console.error("Error getting admins:", error);
+              alert("Failed to get admin list");
+            });
+        } else if (adminChoice === "2") {
+          // Add Group Admin
+          const username = prompt("Enter username to make admin:");
+          if (!username) return;
+
+          // Find user in group members
+          db.collection("users")
+            .where("username", "==", username)
+            .get()
+            .then((querySnapshot) => {
+              if (querySnapshot.empty) {
+                alert("User not found");
+                return;
+              }
+
+              const userDoc = querySnapshot.docs[0];
+              if (!groupData.members.includes(userDoc.id)) {
+                alert("User is not a member of this group");
+                return;
+              }
+
+              const currentAdmins = groupData.admins || [groupData.createdBy];
+              if (currentAdmins.includes(userDoc.id)) {
+                alert("User is already an admin");
+                return;
+              }
+
+              db.collection("groups")
+                .doc(currentChat.id)
+                .update({
+                  admins: [...currentAdmins, userDoc.id]
+                })
+                .then(() => {
+                  // Send system message to notify everyone
+                  db.collection("messages").add({
+                    text: `${username} was promoted to group admin by ${pfpUserName.textContent}`,
+                    senderId: currentUser.uid,
+                    senderUsername: pfpUserName.textContent,
+                    chatType: "group",
+                    chatId: currentChat.id,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    isSystemMessage: true
+                  });
+
+                  alert(`${username} is now a group admin`);
+                })
+                .catch((error) => {
+                  console.error("Error adding admin:", error);
+                  alert("Failed to add admin");
+                });
+            });
+        } else if (adminChoice === "3") {
+          // Remove Group Admin
+          db.collection("users")
+            .where("uid", "in", groupData.admins || [groupData.createdBy])
+            .get()
+            .then((querySnapshot) => {
+              let adminList = "Current Admins:\n\n";
+              const admins = [];
+              querySnapshot.forEach((doc) => {
+                adminList += `- ${doc.data().username}\n`;
+                admins.push({
+                  id: doc.id,
+                  username: doc.data().username
+                });
+              });
+
+              const username = prompt(
+                `${adminList}\nEnter username to remove as admin:`
+              );
+              if (!username) return;
+
+              const adminToRemove = admins.find((a) => a.username === username);
+              if (!adminToRemove) {
+                alert("Invalid admin username");
+                return;
+              }
+
+              if (adminToRemove.id === groupData.createdBy) {
+                alert("Cannot remove the group creator as admin");
+                return;
+              }
+
+              const currentAdmins = groupData.admins || [groupData.createdBy];
+              const updatedAdmins = currentAdmins.filter(
+                (id) => id !== adminToRemove.id
+              );
+
+              db.collection("groups")
+                .doc(currentChat.id)
+                .update({
+                  admins: updatedAdmins
+                })
+                .then(() => {
+                  // Send system message to notify everyone
+                  db.collection("messages").add({
+                    text: `${username} was demoted from group admin by ${pfpUserName.textContent}`,
+                    senderId: currentUser.uid,
+                    senderUsername: pfpUserName.textContent,
+                    chatType: "group",
+                    chatId: currentChat.id,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    isSystemMessage: true
+                  });
+
+                  alert(`${username} is no longer a group admin`);
+                })
+                .catch((error) => {
+                  console.error("Error removing admin:", error);
+                  alert("Failed to remove admin");
+                });
+            });
+        } else {
+          alert("Invalid choice or operation cancelled");
+        }
+      } else if (choice === "4") {
+        // Delete Group
+        const confirm1 = confirm("Are you sure you want to delete this group?");
+        if (!confirm1) return;
+
+        const groupNameConfirm = prompt(
+          `Type the group name "${currentChat.name}" to confirm deletion:`
+        );
+        if (groupNameConfirm !== currentChat.name) {
+          alert("Group name does not match. Deletion cancelled.");
+          return;
+        }
+
+        const confirmFinal = prompt(
+          "This action cannot be undone. Type 'Y' to continue:"
+        );
+        if (confirmFinal !== "Y") {
+          alert("Group deletion cancelled.");
+          return;
+        }
+
+        // Delete group and all messages
+        const batch = db.batch();
+
+        // Delete group document
+        batch.delete(db.collection("groups").doc(currentChat.id));
+
+        // Delete all group messages
+        db.collection("messages")
+          .where("chatId", "==", currentChat.id)
+          .get()
+          .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+              batch.delete(doc.ref);
+            });
+
+            return batch.commit();
+          })
+          .then(() => {
+            alert("Group deleted successfully");
+            // Switch to global chat
+            switchChat("global", "global", "Global Chat");
+          })
+          .catch((error) => {
+            console.error("Error deleting group:", error);
+            alert("Failed to delete group");
+          });
+      } else {
+        alert("Invalid choice or operation cancelled");
+      }
+    })
+    .catch((error) => {
+      console.error("Error checking group admin status:", error);
+      alert("Error accessing group settings");
+    });
+}
+
+function addUserGroupAdmin() {
+  if (currentChat.type !== "group") {
+    alert("This feature is only available in group chats");
+    return;
+  }
+
+  db.collection("groups")
+    .doc(currentChat.id)
+    .get()
+    .then((doc) => {
+      if (!doc.exists) {
+        alert("Group not found");
+        return;
+      }
+
+      const groupData = doc.data();
+      const currentAdmins = groupData.admins || [groupData.createdBy];
+
+      if (!currentAdmins.includes(currentUser.uid)) {
+        alert("Only group admins can manage users");
+        return;
+      }
+
+      const choice = prompt(
+        `User Management for "${currentChat.name}":\n\n` +
+          `Add User to group (press 1)\n` +
+          `Remove user from group (press 2)\n` +
+          `Add Group Admin (press 3)\n` +
+          `Remove Group Admin (press 4)\n` +
+          `List all users (press 5)\n` +
+          `Cancel (press 6)`
+      );
+
+      if (choice === "1") {
+        // Add user to group
+        const username = prompt("Enter username to add to group:");
+        if (!username) return;
+
+        db.collection("users")
+          .where("username", "==", username)
+          .limit(1)
+          .get()
+          .then((querySnapshot) => {
+            if (querySnapshot.empty) {
+              alert("User not found");
+              return;
+            }
+
+            const userDoc = querySnapshot.docs[0];
+            if (groupData.members.includes(userDoc.id)) {
+              alert("User is already in this group");
+              return;
+            }
+
+            db.collection("groups")
+              .doc(currentChat.id)
+              .update({
+                members: [...groupData.members, userDoc.id]
+              })
+              .then(() => {
+                db.collection("messages").add({
+                  text: `${username} was added to the group by ${pfpUserName.textContent}`,
+                  senderId: currentUser.uid,
+                  senderUsername: pfpUserName.textContent,
+                  chatType: "group",
+                  chatId: currentChat.id,
+                  timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                  isSystemMessage: true
+                });
+                alert(`${username} has been added to the group`);
+              });
+          });
+      } else if (choice === "2") {
+        // Remove user from group
+        db.collection("users")
+          .where("uid", "in", groupData.members)
+          .get()
+          .then((querySnapshot) => {
+            let userList = "Group Members:\n\n";
+            const users = [];
+            querySnapshot.forEach((doc) => {
+              if (doc.id !== groupData.createdBy) {
+                userList += `- ${doc.data().username}\n`;
+                users.push({
+                  id: doc.id,
+                  username: doc.data().username
+                });
+              }
+            });
+
+            const username = prompt(`${userList}\nEnter username to remove:`);
+            if (!username) return;
+
+            const userToRemove = users.find((u) => u.username === username);
+            if (!userToRemove) {
+              alert("Invalid username");
+              return;
+            }
+
+            db.collection("groups")
+              .doc(currentChat.id)
+              .update({
+                members: groupData.members.filter(
+                  (id) => id !== userToRemove.id
+                )
+              })
+              .then(() => {
+                db.collection("messages").add({
+                  text: `${username} was removed from the group by ${pfpUserName.textContent}`,
+                  senderId: currentUser.uid,
+                  senderUsername: pfpUserName.textContent,
+                  chatType: "group",
+                  chatId: currentChat.id,
+                  timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                  isSystemMessage: true
+                });
+                alert(`${username} has been removed from the group`);
+              });
+          });
+      } else if (choice === "3") {
+        // Add Group Admin
+        const username = prompt("Enter username to make admin:");
+        if (!username) return;
+
+        db.collection("users")
+          .where("username", "==", username)
+          .get()
+          .then((querySnapshot) => {
+            if (querySnapshot.empty) {
+              alert("User not found");
+              return;
+            }
+
+            const userDoc = querySnapshot.docs[0];
+            if (!groupData.members.includes(userDoc.id)) {
+              alert("User is not in this group");
+              return;
+            }
+
+            if (currentAdmins.includes(userDoc.id)) {
+              alert("User is already an admin");
+              return;
+            }
+
+            db.collection("groups")
+              .doc(currentChat.id)
+              .update({
+                admins: [...currentAdmins, userDoc.id]
+              })
+              .then(() => {
+                db.collection("messages").add({
+                  text: `${username} was promoted to group admin by ${pfpUserName.textContent}`,
+                  senderId: currentUser.uid,
+                  senderUsername: pfpUserName.textContent,
+                  chatType: "group",
+                  chatId: currentChat.id,
+                  timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                  isSystemMessage: true
+                });
+                alert(`${username} is now a group admin`);
+              });
+          });
+      } else if (choice === "4") {
+        // Remove Group Admin
+        db.collection("users")
+          .where("uid", "in", currentAdmins)
+          .get()
+          .then((querySnapshot) => {
+            let adminList = "Group Admins:\n\n";
+            const admins = [];
+            querySnapshot.forEach((doc) => {
+              if (doc.id !== groupData.createdBy) {
+                adminList += `- ${doc.data().username}\n`;
+                admins.push({
+                  id: doc.id,
+                  username: doc.data().username
+                });
+              }
+            });
+
+            const username = prompt(`${adminList}\nEnter username to demote:`);
+            if (!username) return;
+
+            const adminToRemove = admins.find((a) => a.username === username);
+            if (!adminToRemove) {
+              alert("Invalid admin username");
+              return;
+            }
+
+            db.collection("groups")
+              .doc(currentChat.id)
+              .update({
+                admins: currentAdmins.filter((id) => id !== adminToRemove.id)
+              })
+              .then(() => {
+                db.collection("messages").add({
+                  text: `${username} was demoted from group admin by ${pfpUserName.textContent}`,
+                  senderId: currentUser.uid,
+                  senderUsername: pfpUserName.textContent,
+                  chatType: "group",
+                  chatId: currentChat.id,
+                  timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                  isSystemMessage: true
+                });
+                alert(`${username} is no longer a group admin`);
+              });
+          });
+      } else if (choice === "5") {
+        // List all users
+        db.collection("users")
+          .where("uid", "in", groupData.members)
+          .get()
+          .then((querySnapshot) => {
+            let userList = "Group Members:\n\n";
+            let adminList = "Group Admins:\n\n";
+            querySnapshot.forEach((doc) => {
+              const userInfo = `${doc.data().username} (${
+                doc.data().email || "no email"
+              })\n`;
+              if (currentAdmins.includes(doc.id)) {
+                adminList += `- ${userInfo}`;
+              } else {
+                userList += `- ${userInfo}`;
+              }
+            });
+            alert(`${adminList}\n${userList}`);
+          });
+      }
+    });
 }
