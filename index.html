@@ -362,7 +362,217 @@ border-left: 3px solid #094a38;">
 
                 <button id="revertButton">Revert to Default Theme</button>
                 <h4 style="margin-top: 30px;"> AI Theme Creator </h4>
-                <h8 style="margin-top: 5px; opacity: 0.85;"> Sorry, but this is currently offline! </h8>
+
+                <div class="aiThemeContainer">
+                  <div class="aiThemeInputContainer" id="aiThemeInputCont">
+                    <input placeholder="Make me a Serbia colored theme..." id="aiThemeInput" type="text"></input>
+                  </div>
+                </div>
+
+                <h4 style="margin-top: 30px;"> Saved AI Themes </h4>
+                <div class="theme-selector-container-holder">
+                  <div class="theme-selector-container">
+
+                  </div>
+                </div>
+<!--                -->
+              <h4 style="margin-top:30px;"> Manually Create Theme </h4>
+<div class="theme-variables-container">
+  <div class="variable-input-group">
+    <span>--main-bg:</span>
+    <input type="text" placeholder="#282a37" id="main" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--container-bg:</span>
+    <input type="text" placeholder="#343643" id="cont" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--secondary-bg:</span>
+    <input type="text" placeholder="#2a2b3d" id="seco" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--input-bg:</span>
+    <input type="text" placeholder="#3e404d" id="inpu" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--profile-container-bg:</span>
+    <input type="text" placeholder="#383a46" id="prof" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--input-focus-bg:</span>
+    <input type="text" placeholder="#51535e" id="inpf" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--text-color:</span>
+    <input type="text" placeholder="#eaeaea" id="text" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--text-hover:</span>
+    <input type="text" placeholder="#d3b4ff" id="texh" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--purple-accent:</span>
+    <input type="text" placeholder="#8844ff" id="purp" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--purple-active:</span>
+    <input type="text" placeholder="#6765fe" id="pura" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--purple-border:</span>
+    <input type="text" placeholder="#722fca" id="purb" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--purple-hover:</span>
+    <input type="text" placeholder="#9b51e0" id="purh" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--sidebar-bg:</span>
+    <input type="text" placeholder="rgba(170, 129, 227, 0.75)" id="side" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--sidebar-hover:</span>
+    <input type="text" placeholder="rgba(170, 129, 227, 0.85)" id="sidh" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--profile-bg:</span>
+    <input type="text" placeholder="rgba(171, 152, 204, 0.75)" id="prog" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--profile-hover:</span>
+    <input type="text" placeholder="rgba(196, 182, 219, 0.75)" id="proh" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--chat-bg:</span>
+    <input type="text" placeholder="#3e404d" id="chat" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--chat-hover:</span>
+    <input type="text" placeholder="#4a4c5a" id="chah" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--message-bg:</span>
+    <input type="text" placeholder="#646670" id="mess" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--message-bg-lilbro:</span>
+    <input type="text" placeholder="#646670" id="mesl" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--online-indicator:</span>
+    <input type="text" placeholder="#66b953" id="onli" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--white-color:</span>
+    <input type="text" placeholder="#fafafc" id="whit" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--settings-line-bg:</span>
+    <input type="text" placeholder="#51535e" id="sett" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--settings-hover-bg:</span>
+    <input type="text" placeholder="#73757e" id="seth" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--settings-shadow-color:</span>
+    <input type="text" placeholder="#73757e" id="sets" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--red-accent:</span>
+    <input type="text" placeholder="#ff4444" id="reda" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--red-hover:</span>
+    <input type="text" placeholder="#cc0000" id="redh" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--red-active:</span>
+    <input type="text" placeholder="#aa0000" id="redc" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--accent-color:</span>
+    <input type="text" placeholder="#8844ff" id="acce" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--accent-hover:</span>
+    <input type="text" placeholder="#9b51e0" id="acch" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--accent-active:</span>
+    <input type="text" placeholder="#6765fe" id="acca" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--border-color:</span>
+    <input type="text" placeholder="#722fca" id="bord" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--error-color:</span>
+    <input type="text" placeholder="#ff4444" id="erro" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--scrollbar-bg:</span>
+    <input type="text" placeholder="#eee5f9" id="scro" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--demo-card-shadow:</span>
+    <input type="text" placeholder="rgba(0, 0, 0, 0.1)" id="demo" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--demo-input-border:</span>
+    <input type="text" placeholder="#722fca" id="demd" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--cacccf-color:</span>
+    <input type="text" placeholder="#cacccf" id="cacc" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--dfe0e2-color:</span>
+    <input type="text" placeholder="#dfe0e2" id="dfe0" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--eaeaea01:</span>
+    <input type="text" placeholder="rgba(234, 234, 234, 0.01)" id="eaea" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--eaeaea02:</span>
+    <input type="text" placeholder="rgba(234, 234, 234, 0.02)" id="eae2" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--eaeaea03:</span>
+    <input type="text" placeholder="rgba(234, 234, 234, 0.03)" id="eae3" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--a37fdf-color:</span>
+    <input type="text" placeholder="rgba(163, 121, 223)" id="a37f" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--a37fdf-15:</span>
+    <input type="text" placeholder="rgba(163, 121, 223, 0.15)" id="a371" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--a37fdf-25:</span>
+    <input type="text" placeholder="rgba(163, 121, 223, 0.25)" id="a372" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--a37fdf-85:</span>
+    <input type="text" placeholder="rgba(163, 121, 223, 0.85)" id="a378" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--312e48:</span>
+    <input type="text" placeholder="#312e48" id="312e" class="theme-input">
+  </div>
+  <div class="variable-input-group">
+    <span>--5b5c67:</span>
+    <input type="text" placeholder="#5b5c67" id="5b5c" class="theme-input">
+  </div>
+</div>
+              
+              <h8 style="margin-top: 5px; opacity: 0.85"> Or paste in a blob of css var code </h8>
+              <input type="text" placeholder="All of your css root childs here..." id="humanThemeInput"></input>
+            <h4 style="margin-top: 30px;"> Saved Custom Themes </h4>
+            <div class="theme-selector-container-custom"></div>
+
 
                 <div class="enableChatBackgroundContainer">
                   <h4 style="margin-top: 30px;"> Enable Chat Background </h4>
