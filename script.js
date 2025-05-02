@@ -741,8 +741,15 @@ async function sendMessage() {
   let text = messageInput.value.trim();
   if (!text) return;
 
-  // Check if message exceeds 500 character limit
-  if (text.length > 500) {
+  if (text.includes("<img")) {
+    messageInput.disabled = true;
+    document.body.style.cursor = "wait";
+
+    setTimeout(() => {
+      messageInput.disabled = false;
+      document.body.style.cursor = "";
+    }, 250);
+  } else if (text.length > 500) {
     alert("Max character limit reached.");
     messageInput.value = messageInput.value.substring(0, 500);
     messageInput.focus();
@@ -752,10 +759,9 @@ async function sendMessage() {
   // Add character limit indicator if at max
   if (text.length === 500) {
     text +=
-      ' <i style="color:var(--red-accent); opacity: 0.5;"> CHARACTER LIMIT REACHED </i>';
+      ' <i style="color:var(--red-accent); opacity: 0.5; margin-top: 7.5px;"> CHARACTER LIMIT REACHED </i>';
   }
 
-  // Check if chat is blocked (only for private chats)
   if (currentChat.type === "private") {
     const isBlocked = await db
       .collection("blockedChats")
@@ -1673,7 +1679,8 @@ document.addEventListener("DOMContentLoaded", function () {
         "--profile-hover": "rgba(196, 182, 219, 0.75)",
         "--chat-bg": "#3e404d",
         "--chat-hover": "#4a4c5a",
-        // "--message-bg": "#646670",
+        "--message-bg": "#646670",
+        "--message-bg-lilbro": "#646670",
         "--online-indicator": "#66b953",
         "--white-color": "#fafafc",
         "--settings-line-bg": "#51535e",
@@ -1698,7 +1705,9 @@ document.addEventListener("DOMContentLoaded", function () {
         "--a37fdf-color": "rgba(163, 121, 223)",
         "--a37fdf-15": "rgba(163, 121, 223, 0.15)",
         "--a37fdf-25": "rgba(163, 121, 223, 0.25)",
-        "--a37fdf-85": "rgba(163, 121, 223, 0.85)"
+        "--a37fdf-85": "rgba(163, 121, 223, 0.85)",
+        "--312e48": "#312e48",
+        "--5b5c67": "#5b5c67"
       },
       svg: {
         color: "#3e404d",
@@ -1728,7 +1737,8 @@ document.addEventListener("DOMContentLoaded", function () {
         "--profile-hover": "rgba(219, 182, 182, 0.75)",
         "--chat-bg": "#4d3e3e",
         "--chat-hover": "#5a4a4a",
-        // "--message-bg": "#706464",
+        "--message-bg": "#706464",
+        "--message-bg-lilbro": "#706464",
         "--online-indicator": "#66b953",
         "--white-color": "#fafafc",
         "--settings-line-bg": "#5e5151",
@@ -1753,7 +1763,9 @@ document.addEventListener("DOMContentLoaded", function () {
         "--a37fdf-color": "rgba(223, 121, 121)",
         "--a37fdf-15": "rgba(223, 121, 121, 0.15)",
         "--a37fdf-25": "rgba(223, 121, 121, 0.25)",
-        "--a37fdf-85": "rgba(223, 121, 121, 0.85)"
+        "--a37fdf-85": "rgba(223, 121, 121, 0.85)",
+        "--312e48": "#482e2e",
+        "--5b5c67": "#675b5b"
       },
       svg: {
         color: "#4d3e3e",
@@ -1783,7 +1795,8 @@ document.addEventListener("DOMContentLoaded", function () {
         "--profile-hover": "rgba(196, 182, 219, 0.75)",
         "--chat-bg": "#4d3e6e",
         "--chat-hover": "#5a4a7a",
-        // "--message-bg": "#70647a",
+        "--message-bg": "#70647a",
+        "--message-bg-lilbro": "#70647a",
         "--online-indicator": "#66b953",
         "--white-color": "#fafafc",
         "--settings-line-bg": "#5e5173",
@@ -1808,7 +1821,9 @@ document.addEventListener("DOMContentLoaded", function () {
         "--a37fdf-color": "rgba(163, 121, 223)",
         "--a37fdf-15": "rgba(163, 121, 223, 0.15)",
         "--a37fdf-25": "rgba(163, 121, 223, 0.25)",
-        "--a37fdf-85": "rgba(163, 121, 223, 0.85)"
+        "--a37fdf-85": "rgba(163, 121, 223, 0.85)",
+        "--312e48": "#2e2a48",
+        "--5b5c67": "#5b5a67"
       },
       svg: {
         color: "#4d3e6e",
@@ -1827,6 +1842,184 @@ document.addEventListener("DOMContentLoaded", function () {
   const revertButton = document.getElementById("revertButton");
   const themeElements = [defaultTheme, redTheme, purpleTheme];
   const svgWaves = document.querySelectorAll("svg#svg");
+  const aiThemeInput = document.getElementById("aiThemeInput");
+  const aiThemeInputCont = document.getElementById("aiThemeInputCont");
+  const humanThemeInput = document.getElementById("humanThemeInput");
+  const saveManualThemeButton = document.createElement("button");
+  saveManualThemeButton.textContent = "Save Manual Theme";
+  saveManualThemeButton.className = "save-manual-theme-btn";
+  
+  // Insert the save button after the manual theme inputs
+  const manualThemeContainer = document.querySelector(".theme-variables-container");
+  manualThemeContainer.parentNode.insertBefore(saveManualThemeButton, manualThemeContainer.nextSibling.nextSibling);
+
+  // Create container for custom themes (both AI and manual)
+  const customThemeContainer = document.createElement("div");
+  customThemeContainer.id = "customThemeFromAI";
+  customThemeContainer.className = "custom-themes-container";
+  document.querySelector(".theme-selector-container").appendChild(customThemeContainer);
+
+  // Function to save themes to localStorage
+  function saveCustomThemes(themes) {
+    localStorage.setItem("customThemes", JSON.stringify(themes));
+  }
+
+  // Function to load themes from localStorage
+  function loadCustomThemes() {
+    const savedThemes = localStorage.getItem("customThemes");
+    return savedThemes ? JSON.parse(savedThemes) : [];
+  }
+
+  // Function to create a theme div
+  function createThemeDiv(themeName, themeData) {
+    const themeDiv = document.createElement("div");
+    themeDiv.className = "theme-option";
+    themeDiv.innerHTML = `
+      <div class="theme-preview" style="background: ${themeData.css["--accent-color"]}"></div>
+      <span>${themeName}</span>
+      <button class="delete-theme-btn">×</button>
+    `;
+
+    themeDiv.addEventListener("click", (e) => {
+      // Don't apply theme if delete button was clicked
+      if (e.target.classList.contains("delete-theme-btn")) return;
+      
+      applyTheme(themeData, themeDiv);
+
+      // Highlight the selected custom theme
+      document.querySelectorAll("#customThemeFromAI .theme-option").forEach((el) => {
+        el.classList.remove("activegenius");
+      });
+      themeDiv.classList.add("activegenius");
+    });
+
+    // Add delete button functionality
+    const deleteBtn = themeDiv.querySelector(".delete-theme-btn");
+    deleteBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteCustomTheme(themeName);
+    });
+
+    return themeDiv;
+  }
+
+  // Function to delete a custom theme
+  function deleteCustomTheme(themeName) {
+    const customThemes = loadCustomThemes();
+    const updatedThemes = customThemes.filter(theme => theme.name !== themeName);
+    saveCustomThemes(updatedThemes);
+    displayCustomThemes();
+  }
+
+  // Function to display custom themes
+  function displayCustomThemes() {
+    const customThemes = loadCustomThemes();
+    customThemeContainer.innerHTML = "";
+
+    if (customThemes.length === 0) {
+      const noThemesMsg = document.createElement("div");
+      noThemesMsg.className = "no-themes-message";
+      noThemesMsg.textContent = "No custom themes yet. Create one manually or ask the AI to generate one!";
+      customThemeContainer.appendChild(noThemesMsg);
+      return;
+    }
+
+    // Add title
+    const title = document.createElement("h3");
+    title.className = "custom-themes-title";
+    title.textContent = "Custom Themes";
+    customThemeContainer.appendChild(title);
+
+    // Add themes grid
+    const themesGrid = document.createElement("div");
+    themesGrid.className = "themes-grid";
+    customThemes.forEach((theme) => {
+      const themeDiv = createThemeDiv(theme.name, theme.data);
+      themesGrid.appendChild(themeDiv);
+    });
+    customThemeContainer.appendChild(themesGrid);
+  }
+
+  // Function to generate CSS variables from theme data
+  function generateCSSVariables(themeData) {
+    let cssText = ":root {\n";
+    for (const [property, value] of Object.entries(themeData.css)) {
+      cssText += `  ${property}: ${value};\n`;
+    }
+    cssText += "}";
+    return cssText;
+  }
+
+  // Function to call Gemini API for theme generation
+  async function generateAITheme(prompt) {
+    try {
+      const baseTheme = themes.default.css; // Use default theme as base
+      const response = await fetch(API_URL_AI, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: `Create a CSS theme configuration based on: ${prompt}. 
+              Use this base theme configuration as reference (modify these colors to match the requested theme):
+              ${JSON.stringify(baseTheme, null, 2)}
+              
+              Return ONLY a JSON object in this exact format (include ALL these properties):
+              {
+                "name": "Theme name based on the prompt",
+                "data": {
+                  "css": {
+                    // Include ALL the CSS variables from the base theme
+                    // but modify them to match the requested theme style
+                    // (e.g., for a yellow theme, change purples to yellows)
+                  },
+                  "svg": {
+                    "color": "#hexcolor",  // should match the new theme's input-bg
+                    "opacity1": "0.265",
+                    "opacity2": "0.4",
+                    "opacity3": "0.53",
+                    "opacity4": "1"
+                  }
+                }
+              }`
+                }
+              ]
+            }
+          ]
+        })
+      });
+
+      const data = await response.json();
+      const themeText = data.candidates[0].content.parts[0].text;
+
+      // Try to extract JSON from the response
+      try {
+        const jsonStart = themeText.indexOf("{");
+        const jsonEnd = themeText.lastIndexOf("}") + 1;
+        const jsonStr = themeText.slice(jsonStart, jsonEnd);
+        return JSON.parse(jsonStr);
+      } catch (e) {
+        console.error("Error parsing AI response:", e);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error calling Gemini API:", error);
+      return null;
+    }
+  }
+
+  // Function to add a message to the chat
+  function addMessage(content, isUser = false) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = `messagesAIThemecontainer ${isUser ? "user-message" : "ai-message"}`;
+    messageDiv.textContent = content;
+    aiThemeInputCont.appendChild(messageDiv);
+    aiThemeInputCont.scrollTop = aiThemeInputCont.scrollHeight;
+  }
 
   // Update SVG wave colors
   function updateSvgColors(theme) {
@@ -1862,27 +2055,236 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Remove activegenius class from all theme elements
     themeElements.forEach((el) => el.classList.remove("activegenius"));
+    document.querySelectorAll("#customThemeFromAI .theme-option").forEach((el) => {
+      el.classList.remove("activegenius");
+    });
 
-    // Add activegenius class to the selected element
+    // Add activegenius class to the selected element if it exists
     if (element) {
       element.classList.add("activegenius");
     }
   }
 
-  // Event listeners for theme selection
-  defaultTheme.addEventListener("click", () =>
-    applyTheme(themes.default, defaultTheme)
-  );
+  // Function to create a theme from manual inputs
+  function createThemeFromManualInputs() {
+    const themeName = prompt("Enter a name for your theme:");
+    if (!themeName) return;
+
+    const themeData = {
+      css: {
+        "--main-bg": document.getElementById("main").value || "#282a37",
+        "--container-bg": document.getElementById("cont").value || "#343643",
+        "--secondary-bg": document.getElementById("seco").value || "#2a2b3d",
+        "--input-bg": document.getElementById("inpu").value || "#3e404d",
+        "--profile-container-bg": document.getElementById("prof").value || "#383a46",
+        "--input-focus-bg": document.getElementById("inpf").value || "#51535e",
+        "--text-color": document.getElementById("text").value || "#eaeaea",
+        "--text-hover": document.getElementById("texh").value || "#d3b4ff",
+        "--purple-accent": document.getElementById("purp").value || "#8844ff",
+        "--purple-active": document.getElementById("pura").value || "#6765fe",
+        "--purple-border": document.getElementById("purb").value || "#722fca",
+        "--purple-hover": document.getElementById("purh").value || "#9b51e0",
+        "--sidebar-bg": document.getElementById("side").value || "rgba(170, 129, 227, 0.75)",
+        "--sidebar-hover": document.getElementById("sidh").value || "rgba(170, 129, 227, 0.85)",
+        "--profile-bg": document.getElementById("prog").value || "rgba(171, 152, 204, 0.75)",
+        "--profile-hover": document.getElementById("proh").value || "rgba(196, 182, 219, 0.75)",
+        "--chat-bg": document.getElementById("chat").value || "#3e404d",
+        "--chat-hover": document.getElementById("chah").value || "#4a4c5a",
+        "--message-bg": document.getElementById("mess").value || "#646670",
+        "--message-bg-lilbro": document.getElementById("mesl").value || "#646670",
+        "--online-indicator": document.getElementById("onli").value || "#66b953",
+        "--white-color": document.getElementById("whit").value || "#fafafc",
+        "--settings-line-bg": document.getElementById("sett").value || "#51535e",
+        "--settings-hover-bg": document.getElementById("seth").value || "#73757e",
+        "--settings-shadow-color": document.getElementById("sets").value || "#73757e",
+        "--red-accent": document.getElementById("reda").value || "#ff4444",
+        "--red-hover": document.getElementById("redh").value || "#cc0000",
+        "--red-active": document.getElementById("redc").value || "#aa0000",
+        "--accent-color": document.getElementById("acce").value || "#8844ff",
+        "--accent-hover": document.getElementById("acch").value || "#9b51e0",
+        "--accent-active": document.getElementById("acca").value || "#6765fe",
+        "--border-color": document.getElementById("bord").value || "#722fca",
+        "--error-color": document.getElementById("erro").value || "#ff4444",
+        "--scrollbar-bg": document.getElementById("scro").value || "#eee5f9",
+        "--demo-card-shadow": document.getElementById("demo").value || "rgba(0, 0, 0, 0.1)",
+        "--demo-input-border": document.getElementById("demd").value || "#722fca",
+        "--cacccf-color": document.getElementById("cacc").value || "#cacccf",
+        "--dfe0e2-color": document.getElementById("dfe0").value || "#dfe0e2",
+        "--eaeaea01": document.getElementById("eaea").value || "rgba(234, 234, 234, 0.01)",
+        "--eaeaea02": document.getElementById("eae2").value || "rgba(234, 234, 234, 0.02)",
+        "--eaeaea03": document.getElementById("eae3").value || "rgba(234, 234, 234, 0.03)",
+        "--a37fdf-color": document.getElementById("a37f").value || "rgba(163, 121, 223)",
+        "--a37fdf-15": document.getElementById("a371").value || "rgba(163, 121, 223, 0.15)",
+        "--a37fdf-25": document.getElementById("a372").value || "rgba(163, 121, 223, 0.25)",
+        "--a37fdf-85": document.getElementById("a378").value || "rgba(163, 121, 223, 0.85)",
+        "--312e48": document.getElementById("312e").value || "#312e48",
+        "--5b5c67": document.getElementById("5b5c").value || "#5b5c67"
+      },
+      svg: {
+        color: document.getElementById("inpu").value || "#3e404d",
+        opacity1: "0.265",
+        opacity2: "0.4",
+        opacity3: "0.53",
+        opacity4: "1"
+      }
+    };
+
+    // Save the new theme
+    const customThemes = loadCustomThemes();
+    customThemes.push({
+      name: themeName,
+      data: themeData
+    });
+    saveCustomThemes(customThemes);
+
+    // Display the new theme
+    displayCustomThemes();
+
+    // Create a style element for the new theme
+    const styleId = `theme-${themeName.toLowerCase().replace(/\s+/g, "-")}`;
+    let styleElement = document.getElementById(styleId);
+
+    if (!styleElement) {
+      styleElement = document.createElement("style");
+      styleElement.id = styleId;
+      document.head.appendChild(styleElement);
+    }
+
+    styleElement.textContent = generateCSSVariables(themeData);
+
+    // Apply the new theme
+    applyTheme(themeData);
+  }
+
+  // Function to parse CSS variables from text input
+  function parseCSSVariables(cssText) {
+    const variables = {};
+    const rootMatch = cssText.match(/:root\s*{([^}]*)}/);
+    
+    if (rootMatch) {
+      const content = rootMatch[1];
+      const varMatches = content.matchAll(/--([^:]+):\s*([^;]+);?/g);
+      
+      for (const match of varMatches) {
+        variables[`--${match[1].trim()}`] = match[2].trim();
+      }
+    }
+    
+    return variables;
+  }
+
+  // Function to create a theme from CSS text input
+  function createThemeFromCSSText() {
+    const cssText = humanThemeInput.value.trim();
+    if (!cssText) return;
+
+    const themeName = prompt("Enter a name for your theme:");
+    if (!themeName) return;
+
+    const variables = parseCSSVariables(cssText);
+    if (Object.keys(variables).length === 0) {
+      alert("No valid CSS variables found in the input. Please check your input and try again.");
+      return;
+    }
+
+    const themeData = {
+      css: variables,
+      svg: {
+        color: variables["--input-bg"] || "#3e404d",
+        opacity1: "0.265",
+        opacity2: "0.4",
+        opacity3: "0.53",
+        opacity4: "1"
+      }
+    };
+
+    // Save the new theme
+    const customThemes = loadCustomThemes();
+    customThemes.push({
+      name: themeName,
+      data: themeData
+    });
+    saveCustomThemes(customThemes);
+
+    // Display the new theme
+    displayCustomThemes();
+
+    // Create a style element for the new theme
+    const styleId = `theme-${themeName.toLowerCase().replace(/\s+/g, "-")}`;
+    let styleElement = document.getElementById(styleId);
+
+    if (!styleElement) {
+      styleElement = document.createElement("style");
+      styleElement.id = styleId;
+      document.head.appendChild(styleElement);
+    }
+
+    styleElement.textContent = generateCSSVariables(themeData);
+
+    // Apply the new theme
+    applyTheme(themeData);
+  }
+
+  // Event listeners
+  saveManualThemeButton.addEventListener("click", createThemeFromManualInputs);
+  humanThemeInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      createThemeFromCSSText();
+    }
+  });
+
+  aiThemeInput.addEventListener("keypress", async (e) => {
+    if (e.key === "Enter" && aiThemeInput.value.trim()) {
+      const prompt = aiThemeInput.value.trim();
+      addMessage(prompt, true);
+      aiThemeInput.value = "";
+
+      addMessage("Generating your theme... Please wait!");
+
+      const aiTheme = await generateAITheme(prompt);
+
+      if (aiTheme) {
+        // Save the new theme
+        const customThemes = loadCustomThemes();
+        customThemes.push({
+          name: aiTheme.name,
+          data: aiTheme.data
+        });
+        saveCustomThemes(customThemes);
+
+        // Display the new theme
+        displayCustomThemes();
+
+        // Create a style element for the new theme
+        const styleId = `theme-${aiTheme.name.toLowerCase().replace(/\s+/g, "-")}`;
+        let styleElement = document.getElementById(styleId);
+
+        if (!styleElement) {
+          styleElement = document.createElement("style");
+          styleElement.id = styleId;
+          document.head.appendChild(styleElement);
+        }
+
+        styleElement.textContent = generateCSSVariables(aiTheme.data);
+
+        addMessage(`Your "${aiTheme.name}" theme has been created and saved! Click on it to apply.`);
+      } else {
+        addMessage("Sorry, I couldn't generate a theme. Please try a different description.");
+      }
+    }
+  });
+
+  // Existing event listeners for theme selection
+  defaultTheme.addEventListener("click", () => applyTheme(themes.default, defaultTheme));
   redTheme.addEventListener("click", () => applyTheme(themes.red, redTheme));
-  purpleTheme.addEventListener("click", () =>
-    applyTheme(themes.purple, purpleTheme)
-  );
+  purpleTheme.addEventListener("click", () => applyTheme(themes.purple, purpleTheme));
   revertButton.addEventListener("click", () => {
     applyTheme(themes.default, defaultTheme);
   });
 
-  // Initialize with default theme
+  // Initialize with default theme and display any saved custom themes
   applyTheme(themes.default, defaultTheme);
+  displayCustomThemes();
 });
 
 // profile stylething changes
