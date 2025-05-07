@@ -77,7 +77,12 @@ ratioied {
   display: none !important;
 }
 
-.container {
+#signup-btnTwo {
+  filter: saturate(250deg);
+}
+
+.container,
+.containerGuest {
   font-family: "Helvetica", cursive;
   text-align: center;
   background: var(--container-bg) !important;
@@ -86,7 +91,6 @@ ratioied {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  width: 100vw;
   overflow: hidden;
   color: var(--text-color);
   width: 350px;
@@ -95,6 +99,16 @@ ratioied {
   border-radius: 12px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
   text-align: left;
+}
+
+.containerGuest {
+  opacity: 0.875;
+  height: 65vh;
+  position: absolute !important;
+  top: 17.5vh;
+  min-width: 415px;
+  max-width: 700px;
+  left: calc(350px + 17.5vh);
 }
 .aiThemeMessageContainer {
   color: #eaeaea;
@@ -112,7 +126,10 @@ ratioied {
 }
 .container input,
 .container textarea,
-.aiThemeInputContainer input, #humanThemeInput {
+.containerGuest input,
+.containerGuest textarea,
+.aiThemeInputContainer input,
+#humanThemeInput {
   display: block;
   width: calc(100% - 20px);
   margin: 10px auto;
@@ -127,11 +144,14 @@ ratioied {
 }
 
 .container input:focus,
-.container textarea:focus {
+.container textarea:focus,
+.containerGuest input:focus,
+.containerGuest textarea:focus {
   background: var(--input-focus-bg);
 }
 
-.container button {
+.container button,
+.containerGuest button {
   scale: 0.9205 !important;
   all: unset;
   display: flex;
@@ -149,21 +169,38 @@ ratioied {
   user-select: none;
 }
 
-.container button:hover {
+.containerGuest button {
+  border: var(--red-accent) solid 0.15em !important;
+}
+
+.container button:hover,
+.containerGuest button:hover {
   color: var(--text-hover);
   scale: 1 !important;
 }
 
-.container button p {
+.containerGuest button:hover {
+  color: var(--red-hover) !important;
+}
+
+.container button p,
+.containerGuest button p {
   z-index: 1;
 }
 
-.container button:active {
+.container button:active,
+.containerGuest button:active {
   border-color: var(--purple-active);
 }
 
+.containerGuest button:active {
+  border-color: var(--red-active) !important;
+}
+
 .container button::after,
-.container button::before {
+.container button::before,
+.containerGuest button::before,
+.containerGuest button::after {
   content: "";
   position: absolute;
   width: 9em;
@@ -174,27 +211,41 @@ ratioied {
   transition: transform 500ms, background 300ms;
 }
 
-.container button::before {
+.containerGuest button::after,
+.containerGuest button::before {
+  background: var(--red-accent) !important;
+}
+
+.container button::before,
+.containerGuest button::before {
   left: 0;
   transform: translateX(-8em);
 }
 
-.container button::after {
+.container button::after,
+.containerGuest button::after {
   right: 0;
   transform: translateX(8em);
 }
 
-.container button:hover:before {
+.container button:hover:before,
+.containerGuest button:hover:before {
   transform: translateX(-1em);
 }
 
-.container button:hover:after {
+.container button:hover:after,
+.containerGuest button:hover:after {
   transform: translateX(1em);
 }
 
 .container button:active:before,
 .container button:active:after {
   background: var(--purple-active);
+}
+
+.containerGuest button:active:before,
+.containerGuest button:active:after {
+  background: var(--red-active) !important;
 }
 
 .container img {
@@ -659,7 +710,7 @@ input::placeholder {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  height: calc(100vh - 150px);
+  height: calc(100vh - 207.5px);
   overflow-x: hidden;
   overflow-y: scroll;
 }
@@ -992,13 +1043,22 @@ chaters {
 .edit-btn,
 .show-password-btn,
 .show-email-btn,
-.save-btn {
+.save-btn,
+.save-manual-theme-btn,
+.delete-theme-btn {
   padding: 8px 15px;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s ease;
+}
+
+.delete-theme-btn {
+  background: var(--red-accent);
+  margin-top: 7.5px;
+  color: #eaeaea;
+  opacity: 0.85;
 }
 
 .change-btn,
@@ -1590,7 +1650,8 @@ chaters {
 }
 
 #idiotBruh,
-#idiotBruhTwo {
+#idiotBruhTwo,
+#idiotBruhThree {
   position: absolute !important;
   right: 50px;
   bottom: 0px;
@@ -1599,7 +1660,8 @@ chaters {
 }
 
 .enableChatBackgroundContainer,
-.toggleChatGradientContainer {
+.toggleChatGradientContainer,
+.toggleChatMessageProfileIcon {
   position: relative !important;
 }
 
@@ -1721,7 +1783,6 @@ chaters {
 }
 
 .devtag {
-  pointer: help;
   color: var(--red-accent);
   font-weight: 500;
   margin-left: 0px;
@@ -1816,15 +1877,11 @@ chaters {
   opacity: 1 !important;
   transition: all 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
 }
-#groups {
-}
 
 #contacts {
   background: transparent;
 }
 
-#userContainerHolder {
-}
 #userContainerHolderHolder,
 #aiContainerHolder,
 #groupsContainerHolder {
@@ -1869,11 +1926,10 @@ chaters {
   background: red;
 }
 
-/*  */
-/* Custom Themes Container */
 .custom-themes-container {
   width: 100%;
   margin-top: 20px;
+  min-height: 300px;
   padding: 15px;
   background: var(--container-bg);
   border-radius: 12px;
@@ -2039,38 +2095,35 @@ chaters {
   height: 100%;
 }
 
-
-
-
 .theme-variables-container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 15px;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  
-  .variable-input-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .variable-input-group span {
-    min-width: 180px;
-    color: #eaeaea;
-  }
-  
-  .theme-input {
-    background: none;
-    border: 1px solid #51535e;
-    padding: 8px 12px;
-    color: #eaeaea;
-    border-radius: 4px;
-    flex-grow: 1;
-  }
-  
-  .theme-input::placeholder {
-    color: #73757e;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 15px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.variable-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.variable-input-group span {
+  min-width: 180px;
+  color: #eaeaea;
+}
+
+.theme-input {
+  background: none;
+  border: 1px solid #51535e;
+  padding: 8px 12px;
+  color: #eaeaea;
+  border-radius: 4px;
+  flex-grow: 1;
+}
+
+.theme-input::placeholder {
+  color: #73757e;
+}
