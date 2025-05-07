@@ -2127,3 +2127,26 @@ chaters {
 .theme-input::placeholder {
   color: #73757e;
 }
+
+@keyframes messagePopIn {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 0.95;
+  }
+}
+
+@keyframes flashRed {
+  0% {
+    background: rgba(255, 0, 0, 0);
+  }
+  50% {
+    background: rgba(255, 0, 0, 0.3);
+  }
+  100% {
+    background: rgba(255, 0, 0, 0);
+  }
+}
