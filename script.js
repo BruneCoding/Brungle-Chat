@@ -1,4 +1,4 @@
-// firebase initizands dwihh weh i start
+// firebase config stuff yk
 console.log("Chat App Initialized");
 const firebaseConfig = {
   apiKey: "AIzaSyBs2SQXVuM65VCIv54zy8ScDQODXu2f1kM",
@@ -13,12 +13,6 @@ document
   .getElementById("createGroup")
   .addEventListener("click", createNewGroup);
 
-// Example usage:
-
-// Add this to your init() function
-
-// Add this to your init() function
-
 document.getElementById("profile-hex").addEventListener("keypress", (e) => {
   if (e.key === "Enter") {
     applyCustomTheme();
@@ -29,8 +23,6 @@ document
   .getElementById("randomizeHex")
   .addEventListener("click", randomizeHexColor);
 
-// Add this to your init() function
-// Add this to your init() function
 document.getElementById("add").addEventListener("click", () => {
   const fileInput = document.createElement("input");
   fileInput.type = "file";
@@ -45,7 +37,6 @@ function handleFileSelect(e) {
 
   const img = new Image();
   img.onload = function () {
-    // Calculate new dimensions while maintaining aspect ratio
     let width = this.width;
     let height = this.height;
     const maxWidth = 350;
@@ -57,20 +48,17 @@ function handleFileSelect(e) {
       height = Math.floor(height * ratio);
     }
 
-    // Create canvas to resize the image
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d");
     ctx.drawImage(img, 0, 0, width, height);
 
-    // Convert to base64
     const base64 = canvas.toDataURL("image/jpeg", 0.8); // 0.8 quality
-    // Add image to message input
+
     messageInput.value += `<img src="${base64}" class="message-img" style="width: ${width}px; height: ${height}px;">`;
     messageInput.focus();
 
-    // Clean up
     URL.revokeObjectURL(img.src);
   };
   img.onerror = function () {
@@ -79,28 +67,33 @@ function handleFileSelect(e) {
   img.src = URL.createObjectURL(file);
 }
 
-// Add this to your init() function or wherever you set up event listeners
 document
   .getElementById("delete-account-btn")
   .addEventListener("click", initiateAccountDeletion);
 
-// vars for typing
 let typingTimeout = null;
 let isTyping = false;
 let currentTypingListener = null;
 
-// begin firebase systems
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// elements as a front loader
 const authScreen = document.getElementById("auth-screen");
+const authScreenTwo = document.getElementById("auth-screen2");
 const chatScreen = document.getElementById("chat-screen");
 const signupBtn = document.getElementById("signup-btn");
 const usernameInput = document.getElementById("username");
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
+
+// generated guest section vars
+const usernameInputTwo = document.getElementById("username-two");
+const emailInputGenerated = document.getElementById("email-generated");
+const passwordInputTwo = document.getElementById("password-two");
+const signupBtnTwo = document.getElementById("signup-btn-two");
+
+// continued
 const logoutBtn = document.getElementById("logout-btn");
 const pfpUserName = document.getElementById("pfpUserName");
 const contactsList = document.getElementById("contacts");
@@ -121,7 +114,6 @@ messageInput.addEventListener("input", function () {
   }
 });
 
-// show app status
 let currentUser = null;
 let currentChat = {
   type: "global",
@@ -132,30 +124,151 @@ let users = [];
 let groups = [];
 let unsubscribeMessages = null;
 
+// AI API KEYS
 const API_KEY_AI = "AIzaSyCabBCysAE2M7-0DdmXa62VMfE61Js6714";
 const API_URL_AI = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY_AI}`;
 
-// begin the app
 init();
 
 function init() {
   setupMessagePopup();
-  // check log in sign up status
+
   auth.onAuthStateChanged((user) => {
     if (user) {
       currentUser = user;
       setupChatApp();
     } else {
       showAuthScreen();
+      showAuthTwoScreen();
     }
   });
 
-  // vars to funcs basically
+  function generateGuestEmail() {
+    const randomNum = Math.floor(Math.random() * 150) + 1;
+    return `guest-${randomNum}@brungle.com`;
+  }
+
+  emailInputGenerated.value = generateGuestEmail();
+
+  async function handleSignupGuest() {
+    const usernameFirst = usernameInputTwo.value;
+    const username = "Guest-" + usernameFirst;
+    const password = passwordInputTwo.value;
+    const email = emailInputGenerated.value;
+
+    if (!username || !password) {
+      alert("Please enter a username and password");
+      return;
+    }
+
+    try {
+      const userCredential = await auth.createUserWithEmailAndPassword(
+        email,
+        password
+      );
+
+      await db.collection("users").doc(userCredential.user.uid).set({
+        username: username,
+        email: email,
+        isGuest: true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      currentUser = userCredential.user;
+      setupChatApp();
+
+      checkGuestAccountExpiration();
+    } catch (error) {
+      if (error.code === "auth/email-already-in-use") {
+        try {
+          const userCredential = await auth.signInWithEmailAndPassword(
+            email,
+            password
+          );
+          currentUser = userCredential.user;
+          setupChatApp();
+
+          checkGuestAccountExpiration();
+        } catch (signInError) {
+          alert(signInError.message);
+        }
+      } else {
+        alert(error.message);
+      }
+    }
+  }
+
+  function checkGuestAccountExpiration() {
+    if (!currentUser) return;
+
+    db.collection("users")
+      .doc(currentUser.uid)
+      .get()
+      .then((doc) => {
+        if (doc.exists && doc.data().isGuest) {
+          const createdAt = doc.data().createdAt.toDate();
+          const now = new Date();
+          const hoursElapsed = (now - createdAt) / (1000 * 60 * 60);
+          const hoursRemaining = 24 - hoursElapsed;
+
+          if (hoursElapsed >= 23 && hoursElapsed < 24) {
+            alert(
+              `Your Guest account will be deleted in ${Math.ceil(
+                hoursRemaining
+              )} hour(s). To continue using Brungle Chats, please create a normal account or create a new guest account. Be advised that all settings and customizations in this account will also be deleted.`
+            );
+          }
+
+          if (hoursElapsed >= 24) {
+            alert(
+              "Terminating Guest Account. Create a new Brungle Account to use Brungle Chats. If you liked Brungle Chats, make sure to share it with your friends! Please make sure not to signup with a school email ( slight possibility it might turn up in emails, and school might investigate further. most likely like 0.5% but it is still a security breach )"
+            );
+            deleteGuestAccount();
+          } else {
+            const nextCheckTime =
+              hoursElapsed < 23
+                ? (23 - hoursElapsed) * 3600000
+                : (24 - hoursElapsed) * 3600000;
+
+            setTimeout(checkGuestAccountExpiration, nextCheckTime);
+          }
+        }
+      });
+  }
+
+  async function deleteGuestAccount() {
+    try {
+      await db.collection("users").doc(currentUser.uid).delete();
+
+      await currentUser.delete();
+
+      await auth.signOut();
+      currentUser = null;
+      showAuthScreen();
+
+      alert(
+        "Your guest account has been deleted. Please create a new account to continue."
+      );
+    } catch (error) {
+      console.error("Error deleting guest account:", error);
+      alert("Error deleting guest account. Please try again.");
+    }
+  }
+  signupBtnTwo.addEventListener("click", handleSignupGuest);
+
+  function tellMeWhatThisIs() {
+    alert(
+      "Guest Accounts have randomly generated emails. You cannot change this."
+    );
+  }
+  // just stuff
+  emailInputGenerated.addEventListener("click", tellMeWhatThisIs);
+
+  // normal
   signupBtn.addEventListener("click", handleSignup);
   logoutBtn.addEventListener("click", handleLogout);
   sendBtn.addEventListener("click", sendMessage);
 
-  // Add character limit check on input
   messageInput.addEventListener("input", function () {
     const maxLength = 500;
     const currentLength = this.value.length;
@@ -172,11 +285,9 @@ function init() {
 
   searchContacts.addEventListener("input", filterContacts);
 
-  // Add typing debounce
   messageInput.addEventListener("input", debounceTyping, false);
   messageInput.addEventListener("keydown", debounceTyping, false);
 
-  // Add AI chat event listeners
   document.getElementById("nodeAIChat").addEventListener("click", () => {
     switchChat("ai", "nodeAI", "Node");
   });
@@ -193,8 +304,14 @@ function showAuthScreen() {
   chatScreen.classList.add("hidden");
 }
 
+function showAuthTwoScreen() {
+  authScreenTwo.classList.remove("hidden");
+  chatScreen.classList.add("hidden");
+}
+
 function showChatScreen() {
   authScreen.classList.add("hidden");
+  authScreenTwo.classList.add("hidden");
   chatScreen.classList.remove("hidden");
 }
 
@@ -245,7 +362,7 @@ async function setupChatApp() {
 
   createGlobalChatEntry();
   loadUsers();
-  loadGroups(); // Add this line
+  loadGroups();
   switchChat(currentChat.type, currentChat.id, currentChat.name);
 }
 
@@ -270,7 +387,7 @@ async function createGlobalChatEntry() {
       <h1>Global Chat</h1>
       <h3>Global • All Users</h3>
       <p>${lastMessage.substring(0, 20)}${
-    lastMessage.length > 20 ? "..." : ""
+    lastMessage.length > 15 ? "..." : ""
   }</p>
     </div>
     
@@ -306,7 +423,7 @@ function filterContacts() {
 function loadUsers() {
   db.collection("users").onSnapshot((snapshot) => {
     users = [];
-    // Clear only user container
+
     document.getElementById("userContainerHolder").innerHTML = "";
 
     snapshot.forEach((doc) => {
@@ -327,7 +444,6 @@ function displayContact(user) {
   contactDiv.classList.add("personChat");
   contactDiv.dataset.userId = user.id;
 
-  // Apply theme color if it exists
   if (user.themeColor) {
     contactDiv.style.backgroundColor = user.themeColor;
     contactDiv.style.backgroundImage = `linear-gradient(135deg, ${
@@ -341,11 +457,10 @@ function displayContact(user) {
 
   const displayUsername = user.username || "Unknown";
 
-  // Check if user is Brune
-  const isBrune = displayUsername === "Brune";
-  const devTag = isBrune ? '<span class="devtag">⚡DEV</span>' : "";
+  const devUsernames = ["Brune"];
+  const isDev = devUsernames.includes(displayUsername);
+  const devTag = isDev ? '<span class="devtag">⚡DEV</span>' : "";
 
-  // Determine which image source to use
   const avatarSrc = user.profilePhoto
     ? user.profilePhoto
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -1848,16 +1963,23 @@ document.addEventListener("DOMContentLoaded", function () {
   const saveManualThemeButton = document.createElement("button");
   saveManualThemeButton.textContent = "Save Manual Theme";
   saveManualThemeButton.className = "save-manual-theme-btn";
-  
+
   // Insert the save button after the manual theme inputs
-  const manualThemeContainer = document.querySelector(".theme-variables-container");
-  manualThemeContainer.parentNode.insertBefore(saveManualThemeButton, manualThemeContainer.nextSibling.nextSibling);
+  const manualThemeContainer = document.querySelector(
+    ".theme-variables-container"
+  );
+  manualThemeContainer.parentNode.insertBefore(
+    saveManualThemeButton,
+    manualThemeContainer.nextSibling.nextSibling
+  );
 
   // Create container for custom themes (both AI and manual)
   const customThemeContainer = document.createElement("div");
   customThemeContainer.id = "customThemeFromAI";
   customThemeContainer.className = "custom-themes-container";
-  document.querySelector(".theme-selector-container").appendChild(customThemeContainer);
+  document
+    .querySelector(".theme-selector-container")
+    .appendChild(customThemeContainer);
 
   // Function to save themes to localStorage
   function saveCustomThemes(themes) {
@@ -1883,13 +2005,15 @@ document.addEventListener("DOMContentLoaded", function () {
     themeDiv.addEventListener("click", (e) => {
       // Don't apply theme if delete button was clicked
       if (e.target.classList.contains("delete-theme-btn")) return;
-      
+
       applyTheme(themeData, themeDiv);
 
       // Highlight the selected custom theme
-      document.querySelectorAll("#customThemeFromAI .theme-option").forEach((el) => {
-        el.classList.remove("activegenius");
-      });
+      document
+        .querySelectorAll("#customThemeFromAI .theme-option")
+        .forEach((el) => {
+          el.classList.remove("activegenius");
+        });
       themeDiv.classList.add("activegenius");
     });
 
@@ -1906,7 +2030,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // Function to delete a custom theme
   function deleteCustomTheme(themeName) {
     const customThemes = loadCustomThemes();
-    const updatedThemes = customThemes.filter(theme => theme.name !== themeName);
+    const updatedThemes = customThemes.filter(
+      (theme) => theme.name !== themeName
+    );
     saveCustomThemes(updatedThemes);
     displayCustomThemes();
   }
@@ -1919,7 +2045,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if (customThemes.length === 0) {
       const noThemesMsg = document.createElement("div");
       noThemesMsg.className = "no-themes-message";
-      noThemesMsg.textContent = "No custom themes yet. Create one manually or ask the AI to generate one!";
+      noThemesMsg.textContent =
+        "No custom themes yet. Create one manually or ask the AI to generate one!";
       customThemeContainer.appendChild(noThemesMsg);
       return;
     }
@@ -2015,7 +2142,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // Function to add a message to the chat
   function addMessage(content, isUser = false) {
     const messageDiv = document.createElement("div");
-    messageDiv.className = `messagesAIThemecontainer ${isUser ? "user-message" : "ai-message"}`;
+    messageDiv.className = `messagesAIThemecontainer ${
+      isUser ? "user-message" : "ai-message"
+    }`;
     messageDiv.textContent = content;
     aiThemeInputCont.appendChild(messageDiv);
     aiThemeInputCont.scrollTop = aiThemeInputCont.scrollHeight;
@@ -2055,9 +2184,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Remove activegenius class from all theme elements
     themeElements.forEach((el) => el.classList.remove("activegenius"));
-    document.querySelectorAll("#customThemeFromAI .theme-option").forEach((el) => {
-      el.classList.remove("activegenius");
-    });
+    document
+      .querySelectorAll("#customThemeFromAI .theme-option")
+      .forEach((el) => {
+        el.classList.remove("activegenius");
+      });
 
     // Add activegenius class to the selected element if it exists
     if (element) {
@@ -2076,7 +2207,8 @@ document.addEventListener("DOMContentLoaded", function () {
         "--container-bg": document.getElementById("cont").value || "#343643",
         "--secondary-bg": document.getElementById("seco").value || "#2a2b3d",
         "--input-bg": document.getElementById("inpu").value || "#3e404d",
-        "--profile-container-bg": document.getElementById("prof").value || "#383a46",
+        "--profile-container-bg":
+          document.getElementById("prof").value || "#383a46",
         "--input-focus-bg": document.getElementById("inpf").value || "#51535e",
         "--text-color": document.getElementById("text").value || "#eaeaea",
         "--text-hover": document.getElementById("texh").value || "#d3b4ff",
@@ -2084,19 +2216,28 @@ document.addEventListener("DOMContentLoaded", function () {
         "--purple-active": document.getElementById("pura").value || "#6765fe",
         "--purple-border": document.getElementById("purb").value || "#722fca",
         "--purple-hover": document.getElementById("purh").value || "#9b51e0",
-        "--sidebar-bg": document.getElementById("side").value || "rgba(170, 129, 227, 0.75)",
-        "--sidebar-hover": document.getElementById("sidh").value || "rgba(170, 129, 227, 0.85)",
-        "--profile-bg": document.getElementById("prog").value || "rgba(171, 152, 204, 0.75)",
-        "--profile-hover": document.getElementById("proh").value || "rgba(196, 182, 219, 0.75)",
+        "--sidebar-bg":
+          document.getElementById("side").value || "rgba(170, 129, 227, 0.75)",
+        "--sidebar-hover":
+          document.getElementById("sidh").value || "rgba(170, 129, 227, 0.85)",
+        "--profile-bg":
+          document.getElementById("prog").value || "rgba(171, 152, 204, 0.75)",
+        "--profile-hover":
+          document.getElementById("proh").value || "rgba(196, 182, 219, 0.75)",
         "--chat-bg": document.getElementById("chat").value || "#3e404d",
         "--chat-hover": document.getElementById("chah").value || "#4a4c5a",
         "--message-bg": document.getElementById("mess").value || "#646670",
-        "--message-bg-lilbro": document.getElementById("mesl").value || "#646670",
-        "--online-indicator": document.getElementById("onli").value || "#66b953",
+        "--message-bg-lilbro":
+          document.getElementById("mesl").value || "#646670",
+        "--online-indicator":
+          document.getElementById("onli").value || "#66b953",
         "--white-color": document.getElementById("whit").value || "#fafafc",
-        "--settings-line-bg": document.getElementById("sett").value || "#51535e",
-        "--settings-hover-bg": document.getElementById("seth").value || "#73757e",
-        "--settings-shadow-color": document.getElementById("sets").value || "#73757e",
+        "--settings-line-bg":
+          document.getElementById("sett").value || "#51535e",
+        "--settings-hover-bg":
+          document.getElementById("seth").value || "#73757e",
+        "--settings-shadow-color":
+          document.getElementById("sets").value || "#73757e",
         "--red-accent": document.getElementById("reda").value || "#ff4444",
         "--red-hover": document.getElementById("redh").value || "#cc0000",
         "--red-active": document.getElementById("redc").value || "#aa0000",
@@ -2106,17 +2247,26 @@ document.addEventListener("DOMContentLoaded", function () {
         "--border-color": document.getElementById("bord").value || "#722fca",
         "--error-color": document.getElementById("erro").value || "#ff4444",
         "--scrollbar-bg": document.getElementById("scro").value || "#eee5f9",
-        "--demo-card-shadow": document.getElementById("demo").value || "rgba(0, 0, 0, 0.1)",
-        "--demo-input-border": document.getElementById("demd").value || "#722fca",
+        "--demo-card-shadow":
+          document.getElementById("demo").value || "rgba(0, 0, 0, 0.1)",
+        "--demo-input-border":
+          document.getElementById("demd").value || "#722fca",
         "--cacccf-color": document.getElementById("cacc").value || "#cacccf",
         "--dfe0e2-color": document.getElementById("dfe0").value || "#dfe0e2",
-        "--eaeaea01": document.getElementById("eaea").value || "rgba(234, 234, 234, 0.01)",
-        "--eaeaea02": document.getElementById("eae2").value || "rgba(234, 234, 234, 0.02)",
-        "--eaeaea03": document.getElementById("eae3").value || "rgba(234, 234, 234, 0.03)",
-        "--a37fdf-color": document.getElementById("a37f").value || "rgba(163, 121, 223)",
-        "--a37fdf-15": document.getElementById("a371").value || "rgba(163, 121, 223, 0.15)",
-        "--a37fdf-25": document.getElementById("a372").value || "rgba(163, 121, 223, 0.25)",
-        "--a37fdf-85": document.getElementById("a378").value || "rgba(163, 121, 223, 0.85)",
+        "--eaeaea01":
+          document.getElementById("eaea").value || "rgba(234, 234, 234, 0.01)",
+        "--eaeaea02":
+          document.getElementById("eae2").value || "rgba(234, 234, 234, 0.02)",
+        "--eaeaea03":
+          document.getElementById("eae3").value || "rgba(234, 234, 234, 0.03)",
+        "--a37fdf-color":
+          document.getElementById("a37f").value || "rgba(163, 121, 223)",
+        "--a37fdf-15":
+          document.getElementById("a371").value || "rgba(163, 121, 223, 0.15)",
+        "--a37fdf-25":
+          document.getElementById("a372").value || "rgba(163, 121, 223, 0.25)",
+        "--a37fdf-85":
+          document.getElementById("a378").value || "rgba(163, 121, 223, 0.85)",
         "--312e48": document.getElementById("312e").value || "#312e48",
         "--5b5c67": document.getElementById("5b5c").value || "#5b5c67"
       },
@@ -2160,16 +2310,16 @@ document.addEventListener("DOMContentLoaded", function () {
   function parseCSSVariables(cssText) {
     const variables = {};
     const rootMatch = cssText.match(/:root\s*{([^}]*)}/);
-    
+
     if (rootMatch) {
       const content = rootMatch[1];
       const varMatches = content.matchAll(/--([^:]+):\s*([^;]+);?/g);
-      
+
       for (const match of varMatches) {
         variables[`--${match[1].trim()}`] = match[2].trim();
       }
     }
-    
+
     return variables;
   }
 
@@ -2183,7 +2333,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const variables = parseCSSVariables(cssText);
     if (Object.keys(variables).length === 0) {
-      alert("No valid CSS variables found in the input. Please check your input and try again.");
+      alert(
+        "No valid CSS variables found in the input. Please check your input and try again."
+      );
       return;
     }
 
@@ -2256,7 +2408,9 @@ document.addEventListener("DOMContentLoaded", function () {
         displayCustomThemes();
 
         // Create a style element for the new theme
-        const styleId = `theme-${aiTheme.name.toLowerCase().replace(/\s+/g, "-")}`;
+        const styleId = `theme-${aiTheme.name
+          .toLowerCase()
+          .replace(/\s+/g, "-")}`;
         let styleElement = document.getElementById(styleId);
 
         if (!styleElement) {
@@ -2267,17 +2421,25 @@ document.addEventListener("DOMContentLoaded", function () {
 
         styleElement.textContent = generateCSSVariables(aiTheme.data);
 
-        addMessage(`Your "${aiTheme.name}" theme has been created and saved! Click on it to apply.`);
+        addMessage(
+          `Your "${aiTheme.name}" theme has been created and saved! Click on it to apply.`
+        );
       } else {
-        addMessage("Sorry, I couldn't generate a theme. Please try a different description.");
+        addMessage(
+          "Sorry, I couldn't generate a theme. Please try a different description."
+        );
       }
     }
   });
 
   // Existing event listeners for theme selection
-  defaultTheme.addEventListener("click", () => applyTheme(themes.default, defaultTheme));
+  defaultTheme.addEventListener("click", () =>
+    applyTheme(themes.default, defaultTheme)
+  );
   redTheme.addEventListener("click", () => applyTheme(themes.red, redTheme));
-  purpleTheme.addEventListener("click", () => applyTheme(themes.purple, purpleTheme));
+  purpleTheme.addEventListener("click", () =>
+    applyTheme(themes.purple, purpleTheme)
+  );
   revertButton.addEventListener("click", () => {
     applyTheme(themes.default, defaultTheme);
   });
@@ -3711,7 +3873,8 @@ function toggleIndia() {
 
 function getAIWelcomeMessage(aiId) {
   const messages = {
-    nodeAI: "Hey there! 👋 I'm Node! 😊 What's on your mind today?",
+    nodeAI:
+      "Hey there! 👋 I'm Node, your friendly AI buddy! 😊 What's on your mind today?",
     chatgptAI: "Greetings. Im ChatGPT. How may I assist you today?",
     geminiAI: "Hello, I'm Gemini. How can I help you today?"
   };
@@ -3831,4 +3994,40 @@ function saveToConversationHistory(aiId, userMessage, aiResponse) {
   }
 
   localStorage.setItem(historyKey, JSON.stringify(history));
+}
+
+// toggle chat PFP
+function toggleChatPFP() {
+  const messagePFPs = document.querySelectorAll(".message-info img");
+  const messageTimes = document.querySelectorAll(".message-time");
+  const toggleThree = document.querySelector("#idiotBruhThree");
+
+  const firstPFP = messagePFPs[0];
+  const currentWidth = window.getComputedStyle(firstPFP).width;
+
+  if (currentWidth === "35px") {
+    toggleThree.style.color = "white"; // Or whatever text color you want
+    toggleThree.style.backgroundColor = "#4CAF50";
+    messagePFPs.forEach((pfp) => {
+      pfp.style.width = "45px";
+      pfp.style.height = "45px";
+      pfp.style.marginBottom = "4.75px";
+    });
+    messageTimes.forEach((time) => {
+      time.style.marginLeft = "20px";
+      time.style.marginTop = "5px";
+    });
+  } else {
+    toggleThree.style.color = "";
+    toggleThree.style.backgroundColor = "";
+    messagePFPs.forEach((pfp) => {
+      pfp.style.width = "35px";
+      pfp.style.height = "35px";
+      pfp.style.marginBottom = "";
+    });
+    messageTimes.forEach((time) => {
+      time.style.marginLeft = "";
+      time.style.marginTop = "";
+    });
+  }
 }
