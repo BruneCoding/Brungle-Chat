@@ -3711,8 +3711,7 @@ function toggleIndia() {
 
 function getAIWelcomeMessage(aiId) {
   const messages = {
-    nodeAI:
-      "Hey there! 👋 I'm Node, your friendly AI buddy! 😊 What's on your mind today?",
+    nodeAI: "Hey there! 👋 I'm Node! 😊 What's on your mind today?",
     chatgptAI: "Greetings. Im ChatGPT. How may I assist you today?",
     geminiAI: "Hello, I'm Gemini. How can I help you today?"
   };
