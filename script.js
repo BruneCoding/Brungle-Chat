@@ -124,7 +124,7 @@ let users = [];
 let groups = [];
 let unsubscribeMessages = null;
 
-// AI API KEYS
+
 const API_KEY_AI = "AIzaSyCabBCysAE2M7-0DdmXa62VMfE61Js6714";
 const API_URL_AI = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY_AI}`;
 
@@ -856,6 +856,46 @@ async function sendMessage() {
   let text = messageInput.value.trim();
   if (!text) return;
 
+  // Check for slash commands first
+  if (text.startsWith("/")) {
+    if (handleSlashCommand(text)) {
+      messageInput.value = "";
+      return;
+    }
+  }
+
+  // Check if message contains code (except <img> tags)
+  if (text.length > 0 && !(text.startsWith("<img") && text.endsWith(">") && text.split(" ").length <= 3)) {
+    try {
+      console.log("Checking for code in message...");
+      const isCode = await detectCodeWithAI(text);
+      if (isCode) {
+        console.log("Code detected - blocking message");
+        text = '<i style="opacity: 0.5; color: var(--red-accent);"> CODING IS BLOCKED </i>';
+      } else {
+        console.log("No code detected - allowing message");
+      }
+    } catch (error) {
+      console.error("Error checking for code:", error);
+      // Allow message if code detection fails
+    }
+  }
+
+  // Process links (non-YouTube)
+  if (!text.includes("youtube.com") && !text.includes("youtu.be")) {
+    try {
+      console.log("Checking for links in message...");
+      const links = await detectLinksWithAI(text);
+      if (links.length > 0) {
+        console.log("Links detected:", links);
+        text = processLinks(text, links);
+      }
+    } catch (error) {
+      console.error("Error processing links:", error);
+      // Continue with original text if link processing fails
+    }
+  }
+
   if (text.includes("<img")) {
     messageInput.disabled = true;
     document.body.style.cursor = "wait";
@@ -873,8 +913,7 @@ async function sendMessage() {
 
   // Add character limit indicator if at max
   if (text.length === 500) {
-    text +=
-      ' <i style="color:var(--red-accent); opacity: 0.5; margin-top: 7.5px;"> CHARACTER LIMIT REACHED </i>';
+    text += ' <i style="color:var(--red-accent); opacity: 0.5; margin-top: 7.5px;"> CHARACTER LIMIT REACHED </i>';
   }
 
   if (currentChat.type === "private") {
@@ -897,11 +936,7 @@ async function sendMessage() {
 
   if (timeSinceLastMessage < 850) {
     const timeLeft = (850 - timeSinceLastMessage) / 1000;
-    console.log(
-      `Please wait ${timeLeft.toFixed(
-        1
-      )} seconds before sending another message.`
-    );
+    console.log(`Please wait ${timeLeft.toFixed(1)} seconds before sending another message.`);
     return;
   }
 
@@ -1001,13 +1036,115 @@ async function sendMessage() {
   }
 }
 
+async function detectCodeWithAI(text) {
+  // Skip simple image tags
+  if (text.startsWith("<img") && text.endsWith(">") && text.split(" ").length <= 3) {
+    return false;
+  }
+
+  try {
+    const prompt = `Does this message contain any programming code (HTML, CSS, JavaScript, Python, etc.)? 
+    Answer with only "YES" or "NO". Ignore simple HTML tags for images or formatting.
+    Message: ${text}`;
+
+    const response = await fetch(API_URL_AI, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "NO";
+    console.log("AI response:", answer);
+
+    return answer.toUpperCase() === "YES";
+  } catch (error) {
+    console.error("Error detecting code with AI:", error);
+    return false; // Default to allowing message if detection fails
+  }
+}
+
+async function detectLinksWithAI(text) {
+  try {
+    const prompt = `Extract all URLs from this text that are NOT YouTube links (ignore youtube.com or youtu.be).
+    Return ONLY the URLs as a comma-separated list. If no URLs found, return "NONE".
+    Text: ${text}`;
+
+    const response = await fetch(API_URL_AI, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "NONE";
+    console.log("Link detection AI response:", result);
+
+    if (result === "NONE") return [];
+    
+    // Clean and split the URLs
+    return result.split(",")
+      .map(url => url.trim())
+      .filter(url => url.length > 0 && !url.includes("youtube.com") && !url.includes("youtu.be"));
+  } catch (error) {
+    console.error("Error detecting links with AI:", error);
+    return []; // Return empty array if detection fails
+  }
+}
+
+function processLinks(text, links) {
+  let processedText = text;
+  
+  links.forEach(link => {
+    // Escape special regex characters in the link
+    const escapedLink = link.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escapedLink, 'g');
+    
+    processedText = processedText.replace(
+      regex,
+      `<a class="super-link" href="${link}" target="_blank" rel="noopener noreferrer">${link}</a>`
+    );
+  });
+
+  return processedText;
+}
+
+function convertYouTubeLinks(text) {
+  // Your existing YouTube link conversion logic
+  // ...
+  return text; // Return processed text
+}
+
 function formatMessageTime(timestamp) {
   if (!timestamp) return "";
 
-  // Convert Firestore timestamp to Date if needed
+
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
 
-  // Format as HH:MM AM/PM
   return date
     .toLocaleTimeString([], {
       hour: "2-digit",
