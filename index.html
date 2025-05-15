@@ -221,7 +221,7 @@
 
         <div class="chatInputCont">
           <i class="fa-solid fa-paperclip" id="add"></i>
-          <input id="message-input" class="chat-input" type="text" placeholder="Type a message" autofocus>
+          <input id="message-input" class="chat-input" type="text" placeholder="Type a message" autocomplete="off">
           <i class="fa-solid fa-circle-arrow-right" id="send-btn"></i>
         </div>
         <div class="bottomPlace"></div>
@@ -266,7 +266,7 @@
                       <h4> Your Profile Photo </h4>
                       <div class="photo-actions">
                         <div class="url-input-container">
-                          <input type="text" class="current-name" id="profile-photo-url" placeholder="Image Address [URL]">
+                          <input type="text" class="current-name" id="profile-photo-url" placeholder="Image URL or 64Jpeg">
 
                         </div>
                         <button class="change-btn" id="update-photo-btn">Change</button>
@@ -313,6 +313,12 @@
                   <textarea id="profile-bio" class="bio-input" placeholder="Tell us about yourself..."></textarea>
                 </div>
 
+                <div class="setting-section">
+                  <label>User Id</label>
+                  <h4 style="opacity: 0.5; color: var(--red-accent); scale: 0.775;text-align: left; margin-left: 55px;"> DO NOT DISTRIBUTE </h4>
+                  <textarea id="profile-id-account" class="bio-input" placeholder="6WooxgbLVDM1sKfGQSoLbqrLxaV2"></textarea>
+                </div>
+
                 <!-- Save Button -->
                 <div class="save-section">
                   <button class="save-btn" id="save-all-btn">Publish Changes</button>
@@ -351,7 +357,7 @@
                       <div class="message sent" id="message-sample" style="width: 150px;">
                         <div class="message-info" id="message-info-sample" style="margin-top: -15px;">
                           <img src="https://i.imgur.com/LvOr4kt.jpeg" onerror="this.src='https://ui-avatars.com/api/?name=B&amp;background=8065aa&amp;color=eaeaea'">
-                          <h1 id="message-sample-user" style="transform: translateY(-17.5px)">Brune</h1>
+                          <h1 id="message-sample-user" style="transform: translateY(-17.5px)">Sample User</h1>
                         </div>
                         <span class="message-time">5:54 pm | 4/15/2025</span>
                         <div class="message-content" style="margin-top: -15px;"><span>Sample Text</span></div>
@@ -363,6 +369,8 @@
               </div>
             </div>
             <button id="delete-account-btn" class="delete-btn">Delete Account</button>
+            <div style="color: var(--red-accent); opacity: 0.5; scale: 1.1; position: absolute;
+            bottom: 15px; left: 27.5px;"> Brungle Chats 0.8.9</div>
           </div>
           <div class="settings-display-two add-hidden">
             <div class="settings-display-one-insides">
