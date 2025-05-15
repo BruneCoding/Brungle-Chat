@@ -1,5 +1,5 @@
 :root {
-  --main-bg: #282a37;
+  --main-bg: #282a37 !important;
   --container-bg: #343643;
   --secondary-bg: #2a2b3d;
   --input-bg: #3e404d;
@@ -63,7 +63,8 @@ input {
 
 body,
 ratioied {
-  background: var(--main-bg);
+  background-image: none !important;
+  background: var(--main-bg) !important;
   height: 100vh !important;
   width: 100vw !important;
   overflow-x: hidden !important;
@@ -568,8 +569,16 @@ input::placeholder {
   font-size: 24px;
 }
 
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  background-color: #fff8e1 !important; /* Light yellow */
+  -webkit-box-shadow: 0 0 0 1000px #fff8e1 inset !important;
+  border-color: #ff9800 !important;
+}
+
 .chatInputCont {
-  height: 65px;
+  height: 77.5px;
   position: absolute;
   bottom: 0;
   margin: 0 auto;
@@ -584,6 +593,7 @@ input::placeholder {
   justify-content: space-around;
   z-index: 999;
   margin: 15px;
+  outline: none;
 }
 
 .chatInputCont i {
@@ -596,11 +606,12 @@ input::placeholder {
 
 .chatInputCont input {
   width: 100%;
-  height: 20px;
-  background: transparent;
+  height: 100%;
+  background: transparent !important;
   outline: none;
   border: none;
   color: var(--white-color);
+  font-size: medium;
 }
 
 .bottomPlace {
@@ -1789,6 +1800,15 @@ chaters {
   margin-top: 2px;
   opacity: 0.85;
 }
+
+.devtag-lite {
+  color: var(--red-accent) !important;
+  font-weight: 500;
+  opacity: 0.85 !important;
+  position: relative !important;
+  margin: 0 !important;
+  font-size: 27.5px !important;
+}
 /* Message enter animation */
 .message-animation-enter {
   animation: messageEnter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
@@ -2149,4 +2169,8 @@ chaters {
   100% {
     background: rgba(255, 0, 0, 0);
   }
+}
+.super-link {
+  color: #74b9ff;
+  text-decoration: underline;
 }
