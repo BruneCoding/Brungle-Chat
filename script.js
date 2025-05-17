@@ -1,4 +1,3 @@
-// firebase config stuff yk
 console.log("Chat App Initialized");
 const firebaseConfig = {
   apiKey: "AIzaSyBs2SQXVuM65VCIv54zy8ScDQODXu2f1kM",
@@ -30,6 +29,65 @@ document.getElementById("add").addEventListener("click", () => {
   fileInput.onchange = handleFileSelect;
   fileInput.click();
 });
+
+function childGameMenu(type) {
+  const gameMenuCont = document.querySelector(".gameMenuContainer");
+
+  if (type === "Games") {
+    console.log("Games Child Menu Processing");
+    gameMenuCont.classList.add("show");
+    gameMenuCont.classList.remove("hide");
+    gameMenuCont.style.top = "0";
+  } else if (type === "Red") {
+    console.log("childGameMenu(Red)");
+    gameMenuCont.classList.add("hide");
+    gameMenuCont.classList.remove("show");
+  }
+}
+
+function expandGameMenuContainer() {
+  const gameMenuCont = document.querySelector(".gameMenuContainer");
+  const homeSide = document.querySelector("#homes");
+  const homeMain = document.querySelector(".homePage");
+  const chatMain = document.querySelector("#chatersy");
+  const settingsMain = document.querySelector("#notchatersy");
+  const settingsIcon = document.querySelector("#setBut");
+  const homeIcon = document.querySelector("#homeBut");
+  const settingsSide = document.querySelector("#settings");
+
+  gameMenuCont.style.display = "block";
+  const isHomeExpanded =
+    homeSide.style.width === "175px" || homeSide.style.width === "";
+
+  if (isHomeExpanded) {
+    homeMain.style.top = "-105vh";
+    settingsMain.style.top = "-105vh";
+    chatMain.style.opacity = "0";
+    chatMain.style.visibility = "hidden";
+
+    settingsIcon.classList.remove("clickedIcon");
+    settingsIcon.style.opacity = "0.9";
+    settingsSide.style.width = "10px";
+  }
+  childGameMenu("Games");
+}
+
+async function setupChatApp() {
+  showChatScreen();
+  const username = await getUsername(currentUser.uid);
+  pfpUserName.textContent = username;
+  // initializing the homePage
+  createGlobalChatEntry();
+  loadUsers();
+  loadGroups();
+  switchChat(currentChat.type, currentChat.id, currentChat.name);
+
+  setTimeout(() => {
+    console.log("Website Patched. Reloading...");
+    window.location.reload;
+    1850;
+  });
+}
 
 function handleFileSelect(e) {
   const file = e.target.files[0];
@@ -314,6 +372,11 @@ function showChatScreen() {
   authScreen.classList.add("hidden");
   authScreenTwo.classList.add("hidden");
   chatScreen.classList.remove("hidden");
+
+  const homePage = document.querySelector(".homePage");
+  const homeSide = document.querySelector("#homes");
+  homePage.style.top = "0";
+  homeSide.style.width === "175px";
 }
 
 async function handleSignup() {
@@ -354,17 +417,6 @@ async function handleSignup() {
       alert(error.message);
     }
   }
-}
-
-async function setupChatApp() {
-  showChatScreen();
-  const username = await getUsername(currentUser.uid);
-  pfpUserName.textContent = username;
-
-  createGlobalChatEntry();
-  loadUsers();
-  loadGroups();
-  switchChat(currentChat.type, currentChat.id, currentChat.name);
 }
 
 async function createGlobalChatEntry() {
@@ -492,11 +544,9 @@ function displayContact(user) {
     switchChat("private", user.id, displayUsername);
   });
 
-  // Add to user container instead of contacts
   document.getElementById("userContainerHolder").appendChild(contactDiv);
 }
 
-// Helper function to adjust color brightness
 function adjustColor(color, amount) {
   return (
     "#" +
@@ -828,7 +878,6 @@ function setupMessageListener() {
       displayMessage(data, false);
     });
 
-    // After all messages are loaded, scroll to the bottom
     if (wasScrolledToBottom || snapshot.empty) {
       scrollToBottom(true); // Force scroll on initial load or if no new messages
     }
@@ -1045,9 +1094,46 @@ async function sendMessage() {
     alert("Failed to send message: " + error.message);
   }
 }
+function isObviouslyNotCode(text) {
+  if (text.includes("<img")) return true;
+  if (text.includes("--pv")) return true;
+  if (text.includes("<iframe")) return true;
+  if (text.includes("<b")) return true;
+  if (text.includes("<i")) return true;
+  if (text.includes("<br")) return true;
+  if (text.includes("<u")) return true;
+
+  // basic keywords you'd expect in real code
+  const codeKeywords = [
+    "function",
+    "var ",
+    "let ",
+    "const ",
+    "def ",
+    "class ",
+    "{",
+    "}",
+    "();",
+    "</",
+    "<style",
+    "<script",
+    "=>",
+    "<",
+    ">"
+  ];
+  let score = 0;
+  for (let word of codeKeywords) {
+    if (text.includes(word)) score++;
+  }
+
+  return score < 2;
+}
 
 async function detectCodeWithAI(text) {
-  // Skip simple image tags
+  if (isObviouslyNotCode(text)) {
+    return false;
+  }
+
   if (
     text.startsWith("<img") &&
     text.endsWith(">") &&
@@ -1179,75 +1265,124 @@ function handleSlashCommand(text) {
   return false; // Not a recognized command
 }
 
-async function detectLinksWithAI(text) {
-  try {
-    const prompt = `Extract all URLs from this text that are NOT YouTube links (ignore youtube.com or youtu.be). If there are any <img src links ignore it, its for html images.
-    Return ONLY the URLs as a comma-separated list. If no URLs found, return "NONE".
-    Text: ${text}`;
+// async function detectLinksWithAI(text) {
+//   try {
+//     const prompt = `Extract all URLs from this text that are NOT YouTube links (ignore youtube.com or youtu.be). If there are any <img src links ignore it, its for html images.
+//     Return ONLY the URLs as a comma-separated list. If no URLs found, return "NONE".
+//     Text: ${text}`;
 
-    const response = await fetch(API_URL_AI, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt
-              }
-            ]
-          }
-        ]
-      })
-    });
+//     const response = await fetch(API_URL_AI, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json"
+//       },
+//       body: JSON.stringify({
+//         contents: [
+//           {
+//             parts: [
+//               {
+//                 text: prompt
+//               }
+//             ]
+//           }
+//         ]
+//       })
+//     });
 
-    if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`);
-    }
+//     if (!response.ok) {
+//       throw new Error(`API request failed with status ${response.status}`);
+//     }
 
-    const data = await response.json();
-    const result =
-      data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "NONE";
-    console.log("Link detection AI response:", result);
+//     const data = await response.json();
+//     const result =
+//       data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "NONE";
+//     console.log("Link detection AI response:", result);
 
-    if (result === "NONE") return [];
+//     if (result === "NONE") return [];
 
-    return result
-      .split(",")
-      .map((url) => url.trim())
-      .filter(
-        (url) =>
-          url.length > 0 &&
-          !url.includes("youtube.com") &&
-          !url.includes("youtu.be")
-      );
-  } catch (error) {
-    console.error("Error detecting links with AI:", error);
-    return [];
-  }
+//     return result
+//       .split(",")
+//       .map((url) => url.trim())
+//       .filter(
+//         (url) =>
+//           url.length > 0 &&
+//           !url.includes("youtube.com") &&
+//           !url.includes("youtu.be")
+//       );
+//   } catch (error) {
+//     console.error("Error detecting links with AI:", error);
+//     return [];
+//   }
+// }
+
+function detectLinksWithAI(text) {
+  const cleanedText = text.replace(/<img[^>]*src=["'][^"']*["'][^>]*>/gi, "");
+
+  // Updated regex to match:
+  // 1. URLs with protocol (http/https)
+  // 2. URLs without protocol but with common TLDs
+  const urlRegex = /(?:https?:\/\/)?(?:www\.)?[a-z0-9-]+(?:\.[a-z]{2,}){1,}(?:\/[^\s"'>]*)?/gi;
+  const matches = cleanedText.match(urlRegex) || [];
+
+  return matches.filter(
+    (url) =>
+      !url.includes("youtube.com") &&
+      !url.includes("youtu.be") &&
+      // Additional check to ensure we're only getting valid domains
+      /[a-z0-9-]+\.[a-z]{2,}/i.test(url)
+  );
 }
 
 function processLinks(text, links, previewMode = false) {
   let processedText = text;
   const processedLinks = new Set();
 
+  // Domains known to block iframes
+  const blockedIframeHosts = [
+    "youtube.com",
+    "youtu.be",
+    "google.com",
+    "gmail.com",
+    "drive.google.com",
+    "accounts.google.com",
+    "facebook.com",
+    "instagram.com",
+    "linkedin.com",
+    "twitter.com",
+    "x.com"
+  ];
+
   links.forEach((link) => {
     if (processedLinks.has(link)) return;
     processedLinks.add(link);
 
+    // Escape regex special characters
     const escapedLink = link.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(`(^|\\s)${escapedLink}($|\\s)`, "g");
+    const regex = new RegExp(`(\\s|^)${escapedLink}(\\s|$)`, "g");
+
+    let isBlocked = false;
+    try {
+      const urlObj = new URL(link);
+      const hostname = urlObj.hostname.replace(/^www\./, "");
+      isBlocked = blockedIframeHosts.some((domain) =>
+        hostname.endsWith(domain)
+      );
+    } catch (e) {
+      isBlocked = true;
+    }
 
     if (previewMode) {
-      processedText = processedText.replace(
-        regex,
-        `$1<div class="link-preview">
-          <iframe src="${link}" width="360" height="180" frameborder="0" allowfullscreen></iframe>
-          <a class="super-link" href="${link}" target="_blank" rel="noopener noreferrer">${link}</a>
-        </div>$2`
-      );
+      if (isBlocked) {
+        processedText = processedText.replace(
+          regex,
+          `$1<i style="opacity: 0.5; color: var(--red-accent);">LINK: ${link} CANNOT BE DISPLAYED. REASON: CORS</i>$2`
+        );
+      } else {
+        processedText = processedText.replace(
+          regex,
+          `$1<div class="link-preview"><iframe src="${link}" width="360" height="180" frameborder="0" allowfullscreen></iframe> <a class="super-link" href="${link}" target="_blank" rel="noopener noreferrer">${link}</a> </div>$2`
+        );
+      }
     } else {
       processedText = processedText.replace(
         regex,
@@ -1255,10 +1390,8 @@ function processLinks(text, links, previewMode = false) {
       );
     }
   });
-
   return processedText;
 }
-
 function convertYouTubeLinks(text) {
   // Your existing YouTube link conversion logic
   // ...
@@ -1324,12 +1457,10 @@ function displayMessage(message, isNewMessage = true) {
   const messageContent = document.createElement("div");
   messageContent.classList.add("message-content");
 
-  // Check if user is Brune
   const isBrune = message.senderId === "EPeNaU0PVkXBScV7uDQHX9OuLvk1";
-  //  "aiqrAWD9ZueEHWRaAUYpri3U6M33" jai's dev rank
-  const devTag = isBrune ? '<span class="devtag">⚡DEV</span>' : "";
+  const isJai = message.senderId === "aiqrAWD9ZueEHWRaAUYpri3U6M33";
+  const devTag = isBrune || isJai ? '<span class="devtag">⚡DEV</span>' : "";
 
-  // Check if user is group admin
   let groupAdminTag = "";
   if (currentChat.type === "group") {
     db.collection("groups")
@@ -1357,13 +1488,11 @@ function displayMessage(message, isNewMessage = true) {
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = message.text;
 
-    // Handle YouTube embeds
     const iframes = tempDiv.querySelectorAll("iframe");
     iframes.forEach((iframe) => {
       messageContent.appendChild(iframe.cloneNode(true));
     });
 
-    // Handle images
     const images = tempDiv.querySelectorAll("img:not([src*='youtube.com'])");
     images.forEach((img) => {
       const newImg = document.createElement("img");
@@ -1374,7 +1503,6 @@ function displayMessage(message, isNewMessage = true) {
       messageContent.appendChild(newImg);
     });
 
-    // Handle text nodes
     const textNodes = Array.from(tempDiv.childNodes).filter(
       (node) =>
         (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== "") ||
@@ -1502,72 +1630,305 @@ function updateGroupChatLastMessage(groupId, message) {
 }
 
 function ChatExpansion() {
+  const chatMain = document.querySelector("#chatersy");
+  const settingsMain = document.querySelector("#notchatersy");
+  const homeIcon = document.querySelector("#homeBut");
+  const settingsIcon = document.querySelector("#setBut");
+  const homeSide = document.querySelector("#homes");
+  const homeMain = document.querySelector(".homePage");
+  const settingsSide = document.querySelector("#settings");
+  const gameMenuCont = document.querySelector(".gameMenuContainer");
+
+  //
+
+  const chatIcon = document.querySelector("#chatBut");
+  const chatSide = document.querySelector("#chats");
   const chatAreaMain = document.querySelector(".chatArea");
   const searchSystem = document.querySelector(".chat-search");
-  const icon = document.querySelector("#chatBut");
-  const side = document.querySelector("#chats");
 
-  const isExpanded = chatAreaMain.style.width === "calc(100% - 185px)";
+  const isHomeExpanded =
+    homeSide.style.width === "175px" || homeSide.style.width === "";
 
-  chatAreaMain.style.width = isExpanded
-    ? "calc(100% - 550px)"
-    : "calc(100% - 185px)";
-  searchSystem.style.left = isExpanded ? "165px" : "-365px";
-  searchSystem.style.opacity = isExpanded ? "1" : "0";
+  if (isHomeExpanded) {
+    chatIcon.classList.add("clickedIcon");
+    chatIcon.style.opacity = "1";
+    chatSide.style.width = "175px";
+    chatAreaMain.style.width = "calc(100% - 550px)";
+    searchSystem.style.left = "165px";
+    searchSystem.style.opacity = "1";
+    searchSystem.style.visibility = "visible";
 
-  searchSystem.style.visibility = isExpanded ? "visible" : "hidden";
+    homeMain.style.top = "-105vh";
+    settingsMain.style.top = "-105vh";
+    chatMain.style.opacity = "1";
+    chatMain.style.visibility = "visible";
 
-  if (isExpanded) {
-    icon.classList.remove("clickedIcon");
-    icon.style.opacity = "0.9";
-    side.style.width = "10px";
-  } else {
-    icon.classList.add("clickedIcon");
-    icon.style.opacity = "1";
-    side.style.width = "175px";
+    homeIcon.classList.remove("clickedIcon");
+    homeIcon.style.opacity = "0.9";
+    homeSide.style.width = "10px";
+
+    // Also ensure settings is hidden and its icon is reset
+    settingsIcon.classList.remove("clickedIcon");
+    settingsIcon.style.opacity = "0.9";
+    settingsSide.style.width = "10px";
+    gameMenuCont.classList.add("hide");
+    gameMenuCont.classList.remove("show");
+  } else if (!isHomeExpanded) {
+    chatIcon.classList.remove("clickedIcon");
+    chatIcon.style.opacity = "0.9";
+    chatSide.style.width = "10px";
+    searchSystem.style.opacity = "0";
+    searchSystem.style.visibility = "hidden";
+
+    gameMenuCont.classList.add("hide");
+    gameMenuCont.classList.remove("show");
+
+    homeMain.style.top = "0";
+    settingsMain.style.top = "-105vh";
+    chatMain.style.opacity = "0";
+
+    chatMain.style.opacity = "1";
+    chatMain.style.visibility = "visible";
+
+    homeIcon.classList.add("clickedIcon");
+    homeIcon.style.opacity = "1";
+    homeSide.style.width = "175px";
+
+    // Ensure settings icon is reset
+    settingsIcon.classList.remove("clickedIcon");
+    settingsIcon.style.opacity = "0.9";
+    settingsSide.style.width = "10px";
+  }
+
+  const isSettingsExpanded =
+    settingsSide.style.width === "175px" || settingsSide.style.width === "";
+
+  if (!isSettingsExpanded) {
+    chatIcon.classList.add("clickedIcon");
+    chatIcon.style.opacity = "1";
+    chatSide.style.width = "175px";
+    chatAreaMain.style.width = "calc(100% - 550px)";
+    searchSystem.style.left = "165px";
+    searchSystem.style.opacity = "1";
+    searchSystem.style.visibility = "visible";
+
+    gameMenuCont.classList.add("hide");
+    gameMenuCont.classList.remove("show");
+
+    settingsMain.style.top = "-105vh";
+    homeMain.style.top = "-105vh";
+    chatMain.style.opacity = "1";
+    chatMain.style.visibility = "visible";
+
+    settingsIcon.classList.remove("clickedIcon");
+    settingsIcon.style.opacity = "0.9";
+    settingsSide.style.width = "10px";
+
+    homeIcon.classList.remove("clickedIcon");
+    homeIcon.style.opacity = "0.9";
+    homeSide.style.width = "10px";
+  } else if (isSettingsExpanded) {
+    chatIcon.classList.remove("clickedIcon");
+    chatIcon.style.opacity = "0.9";
+    chatSide.style.width = "10px";
+    searchSystem.style.opacity = "0";
+    searchSystem.style.visibility = "hidden";
+
+    gameMenuCont.classList.add("hide");
+    gameMenuCont.classList.remove("show");
+    settingsMain.style.top = "0";
+    homeMain.style.top = "-105vh";
+
+    chatMain.style.opacity = "1";
+    chatMain.style.visibility = "visible";
+
+    settingsIcon.classList.add("clickedIcon");
+    settingsIcon.style.opacity = "1";
+    settingsSide.style.width = "175px";
+
+    // Ensure home icon is reset
+    homeIcon.classList.remove("clickedIcon");
+    homeIcon.style.opacity = "0.9";
+    homeSide.style.width = "10px";
   }
 }
-// settings panel
+
+// settings panel xd
 function toggleSettings() {
+  const homeMain = document.querySelector(".homePage");
   const chatMain = document.querySelector("#chatersy");
-  const setMain = document.querySelector("#notchatersy");
-  const icon = document.querySelector("#setBut");
-  const side = document.querySelector("#settings");
+  const settingsMain = document.querySelector("#notchatersy");
+  const settingsIcon = document.querySelector("#setBut");
+  const homeIcon = document.querySelector("#homeBut");
+  const settingsSide = document.querySelector("#settings");
+  const homeSide = document.querySelector("#homes");
+  const gameMenuCont = document.querySelector(".gameMenuContainer");
+  //
 
-  // Check if settings are currently expanded (sidebar width check)
-  const isExpanded = side.style.width === "175px" || side.style.width === "";
+  const chatIcon = document.querySelector("#chatBut");
+  const chatSide = document.querySelector("#chats");
+  const chatAreaMain = document.querySelector(".chatArea");
+  const searchSystem = document.querySelector(".chat-search");
 
-  if (
-    chatMain.style.visibility === "visible" ||
-    chatMain.style.visibility === ""
-  ) {
-    // If chat is visible, show settings and collapse sidebar
-    setMain.style.top = "0";
+  const isSettingsExpanded =
+    settingsSide.style.width === "175px" || settingsSide.style.width === "";
+
+  if (isSettingsExpanded) {
+    chatIcon.classList.add("clickedIcon");
+    chatIcon.style.opacity = "1";
+    chatSide.style.width = "175px";
+    chatAreaMain.style.width = "calc(100% - 550px)";
+    searchSystem.style.left = "165px";
+    searchSystem.style.opacity = "1";
+    searchSystem.style.visibility = "visible";
+
+    gameMenuCont.classList.add("hide");
+    gameMenuCont.classList.remove("show");
+
+    settingsMain.style.top = "-105vh";
+    homeMain.style.top = "-105vh";
+    chatMain.style.opacity = "1";
+    chatMain.style.visibility = "visible";
+
+    settingsIcon.classList.remove("clickedIcon");
+    settingsIcon.style.opacity = "0.9";
+    settingsSide.style.width = "10px";
+
+    homeIcon.classList.remove("clickedIcon");
+    homeIcon.style.opacity = "0.9";
+    homeSide.style.width = "10px";
+  } else {
+    chatIcon.classList.remove("clickedIcon");
+    chatIcon.style.opacity = "0.9";
+    chatSide.style.width = "10px";
+    searchSystem.style.opacity = "0";
+    searchSystem.style.visibility = "hidden";
+
+    gameMenuCont.classList.add("hide");
+    gameMenuCont.classList.remove("show");
+    settingsMain.style.top = "0";
+    homeMain.style.top = "-105vh";
     chatMain.style.opacity = "0";
 
     setTimeout(() => {
       chatMain.style.visibility = "hidden";
-      chatMain.style.opacity = "0";
     }, 300);
 
-    // Icon and sidebar behavior
-    icon.classList.add("clickedIcon");
-    icon.style.opacity = "1";
-    side.style.width = "175px";
-  } else {
-    // If chat is hidden, hide settings and expand sidebar
-    setMain.style.top = "-105vh";
-    chatMain.style.opacity = "1";
-    chatMain.style.visibility = "visible";
+    settingsIcon.classList.add("clickedIcon");
+    settingsIcon.style.opacity = "1";
+    settingsSide.style.width = "175px";
 
-    // Icon and sidebar behavior
-    icon.classList.remove("clickedIcon");
-    icon.style.opacity = "0.9";
-    side.style.width = "10px";
+    // Ensure home icon is reset
+    homeIcon.classList.remove("clickedIcon");
+    homeIcon.style.opacity = "0.9";
+    homeSide.style.width = "10px";
   }
 }
 
-// settings tabs etc
+function toggleHomepage() {
+  const chatMain = document.querySelector("#chatersy");
+  const settingsMain = document.querySelector("#notchatersy");
+  const homeIcon = document.querySelector("#homeBut");
+  const settingsIcon = document.querySelector("#setBut");
+  const homeSide = document.querySelector("#homes");
+  const homeMain = document.querySelector(".homePage");
+  const settingsSide = document.querySelector("#settings");
+  const gameMenuCont = document.querySelector(".gameMenuContainer");
+
+  //
+
+  const chatIcon = document.querySelector("#chatBut");
+  const chatSide = document.querySelector("#chats");
+  const chatAreaMain = document.querySelector(".chatArea");
+  const searchSystem = document.querySelector(".chat-search");
+
+  const isHomeExpanded =
+    homeSide.style.width === "175px" || homeSide.style.width === "";
+
+  if (isHomeExpanded) {
+    chatIcon.classList.add("clickedIcon");
+    chatIcon.style.opacity = "1";
+    chatSide.style.width = "175px";
+    chatAreaMain.style.width = "calc(100% - 550px)";
+    searchSystem.style.left = "165px";
+    searchSystem.style.opacity = "1";
+    searchSystem.style.visibility = "visible";
+
+    homeMain.style.top = "-105vh";
+    settingsMain.style.top = "-105vh";
+    chatMain.style.opacity = "1";
+    chatMain.style.visibility = "visible";
+
+    homeIcon.classList.remove("clickedIcon");
+    homeIcon.style.opacity = "0.9";
+    homeSide.style.width = "10px";
+
+    // Also ensure settings is hidden and its icon is reset
+    settingsIcon.classList.remove("clickedIcon");
+    settingsIcon.style.opacity = "0.9";
+    settingsSide.style.width = "10px";
+    gameMenuCont.classList.add("hide");
+    gameMenuCont.classList.remove("show");
+  } else {
+    chatIcon.classList.remove("clickedIcon");
+    chatIcon.style.opacity = "0.9";
+    chatSide.style.width = "10px";
+    searchSystem.style.opacity = "0";
+    searchSystem.style.visibility = "hidden";
+
+    gameMenuCont.classList.add("hide");
+    gameMenuCont.classList.remove("show");
+
+    homeMain.style.top = "0";
+    settingsMain.style.top = "-105vh";
+    chatMain.style.opacity = "0";
+
+    setTimeout(() => {
+      chatMain.style.visibility = "hidden";
+    }, 300);
+
+    homeIcon.classList.add("clickedIcon");
+    homeIcon.style.opacity = "1";
+    homeSide.style.width = "175px";
+
+    // Ensure settings icon is reset
+    settingsIcon.classList.remove("clickedIcon");
+    settingsIcon.style.opacity = "0.9";
+    settingsSide.style.width = "10px";
+  }
+}
+
+document.querySelector(".fullScreen").addEventListener("click", function () {
+  console.log("worked xd");
+  const fullScreen = document.querySelector(".fullScreen");
+  const chatIcon = document.querySelector("#chatBut");
+  const chatSide = document.querySelector("#chats");
+  const chatAreaMain = document.querySelector(".chatArea");
+  const searchSystem = document.querySelector(".chat-search");
+
+  const isHidden = getComputedStyle(searchSystem).visibility === "hidden";
+
+  if (isHidden) {
+    fullScreen.innerHTML =
+      '<i class="fa-solid fa-up-right-and-down-left-from-center"></i>';
+    chatAreaMain.style.width = "calc(100% - 550px)";
+    searchSystem.style.left = "165px";
+    searchSystem.style.opacity = "1";
+    searchSystem.style.visibility = "visible";
+  } else {
+    fullScreen.innerHTML =
+      '<i class="fa-solid fa-down-left-and-up-right-to-center"></i>';
+    chatAreaMain.style.width = "calc(100% - 185px)";
+    searchSystem.style.left = "-365px";
+    searchSystem.style.opacity = "0";
+    searchSystem.style.visibility = "hidden";
+  }
+});
+
+const chatMain = document.querySelector("#chatersy");
+chatMain.style.opacity = "0";
+chatMain.style.visibility = "hidden";
+
 function resetActiveTabs() {
   const tabs = document.querySelectorAll(".settings-selection");
   tabs.forEach((tab) => {
@@ -1639,8 +2000,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ?.addEventListener("click", saveAllProfileChanges);
 });
 
-// Load current user's profile settings
-// Load current user's profile settings
 function loadProfileSettings() {
   if (!currentUser) return;
 
@@ -3190,7 +3549,6 @@ function setupMessagePopup() {
   popup.addEventListener("mouseleave", startFadeOut);
 
   function showPopup(x, y, user) {
-    // Adjust styles based on username length
     const usernameElement = document.getElementById("account-username-popup");
     if (user.username.length > 8) {
       usernameElement.style.fontSize = "13px";
@@ -3200,7 +3558,6 @@ function setupMessagePopup() {
       usernameElement.style.marginTop = "5px";
     }
 
-    // Calculate position to ensure popup stays visible
     const popupHeight = 200;
     const popupWidth = 300;
     const windowHeight = window.innerHeight;
@@ -3209,7 +3566,6 @@ function setupMessagePopup() {
     let topPosition = y + 10;
     let leftPosition = x + 10;
 
-    // Adjust if near bottom of screen (minimum 200px from bottom)
     const minBottomMargin = 250;
     const maxTopPosition = windowHeight - popupHeight - minBottomMargin;
 
@@ -3217,12 +3573,10 @@ function setupMessagePopup() {
       topPosition = maxTopPosition;
     }
 
-    // Adjust if near right edge of screen
     if (leftPosition + popupWidth > windowWidth) {
       leftPosition = windowWidth - popupWidth - 20;
     }
 
-    // Position the popup
     popup.style.left = `${leftPosition}px`;
     popup.style.top = `${topPosition}px`;
 
@@ -3283,20 +3637,15 @@ function setupMessagePopup() {
     }, 2250);
   }
 
-  // Add click handler to messages container
   messagesContainer.addEventListener("click", (e) => {
-    // Find the clicked message element
     const messageElement = e.target.closest(".message");
     if (!messageElement || messageElement.classList.contains("sent")) return;
 
-    // Get the sender's username from the message
     const usernameElement = messageElement.querySelector(".message-info h1");
     if (!usernameElement) return;
 
-    // Clean the username (remove DEV tag if present)
     const username = usernameElement.textContent.replace(" ⚡DEV", "").trim();
 
-    // Find the user in our users array
     const user = users.find((u) => u.username === username);
     if (!user) return;
 
@@ -3385,7 +3734,6 @@ async function memberBlockChat() {
   const isAIChat = ["nodeAI", "chatgptAI", "geminiAI"].includes(chatId);
 
   if (isAIChat) {
-    // AI avatar images (update paths as needed)
     const aiAvatars = {
       nodeAI:
         "data:image/jpeg;base64,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",
@@ -4240,11 +4588,11 @@ async function getAIResponse(aiId, userMessage) {
     // Prepare prompt based on AI type
     let prompt = "";
     if (aiId === "nodeAI") {
-      prompt = `You are Node, a friendly AI assistant. Respond as if the user is a friend of yours. The users are from any gender, so respond appropriately. Use emojis and keep responses under 100 words. Be warm, supportive, and engaging. Make sure to use at least 1 emoji every response and max of 3 emoji's every response. Here's our conversation so far:\n${conversationHistory}\nUser: ${userMessage}\nNode:`;
+      prompt = `You are Node, a friendly AI assistant. Respond as if the user is a friend of yours. The users are from any gender, so respond appropriately. Use emojis and keep responses under 100 words. Be warm, supportive, and engaging. Make sure to use at least 1 emoji every response and max of 3 emoji's every response. If you need to format your response, when you want to emphasize facts or just for fun, there are 3 currently allowed formats. First is bolding, to bold something use <b> then </b> inside the tags will be thing u want to bold. i would recommend to not overdo it! to italizise and underline it is the same premise, <i> </i>, <u> </u>. if you need to make a new line for a new paragraph, do <br><br> and then write your next paragraph! Another thing is that whenever you are formatting parts of your response, make sure it is relavent to what the user is asking. for example, if they ask for george washington, format his birth, death, name, places etc. Make sure to use formatting in any response bigger than around 15 words. Here's our conversation so far:\n${conversationHistory}\nUser: ${userMessage}\nNode:`;
     } else if (aiId === "chatgptAI") {
-      prompt = `You are ChatGPT, a highly knowledgeable AI. Respond formally with precise information. Use advanced vocabulary when appropriate. Provide detailed, accurate responses. Act serious. Here's our conversation so far:\n${conversationHistory}\nUser: ${userMessage}\nChatGPT:`;
+      prompt = `You are ChatGPT, a highly knowledgeable AI. Respond formally with precise information. Use advanced vocabulary when appropriate. Provide detailed, accurate responses. Act serious.If you need to format your response, when you want to emphasize facts or just for fun, there are 3 currently allowed formats. First is bolding, to bold something use <b> then </b> inside the tags will be thing u want to bold. i would recommend to not overdo it! to italizise and underline it is the same premise, <i> </i>, <u> </u>. if you need to make a new line for a new paragraph, do <br><br> and then write your next paragraph! Another thing is that whenever you are formatting parts of your response, make sure it is relavent to what the user is asking. for example, if they ask for george washington, format his birth, death, name, places etc. Make sure to use formatting in any response bigger than around 15 words. Here's our conversation so far:\n${conversationHistory}\nUser: ${userMessage}\nChatGPT:`;
     } else {
-      prompt = `You are Gemini, a helpful AI assistant. Respond naturally to the user. Here's our conversation so far:\n${conversationHistory}\nUser: ${userMessage}\nGemini:`;
+      prompt = `You are Gemini, a helpful AI assistant. Respond naturally to the user.If you need to format your response, when you want to emphasize facts or just for fun, there are 3 currently allowed formats. First is bolding, to bold something use <b> then </b> inside the tags will be thing u want to bold. i would recommend to not overdo it! to italizise and underline it is the same premise, <i> </i>, <u> </u>. if you need to make a new line for a new paragraph, do <br><br> and then write your next paragraph! Another thing is that whenever you are formatting parts of your response, make sure it is relavent to what the user is asking. for example, if they ask for george washington, format his birth, death, name, places etc. Make sure to use formatting in any response bigger than around 15 words. Here's our conversation so far:\n${conversationHistory}\nUser: ${userMessage}\nGemini:`;
     }
 
     const response = await fetch(API_URL_AI, {
@@ -4447,3 +4795,175 @@ display: none;
 const style = document.createElement("style");
 style.textContent = memberListCSS;
 document.head.appendChild(style);
+
+function moveHomePageToBody() {
+  const body = document.body;
+
+  const homePage = document.querySelector(".homePage");
+
+  if (homePage) {
+    body.appendChild(homePage);
+  } else {
+    console.warn('No element with class "homePage" found');
+  }
+}
+
+moveHomePageToBody();
+
+function openWebLink() {
+  window.location.href = "https://weblink-brungle.pages.dev/p=home";
+}
+
+function openCoding() {
+  window.location.href = "https://coding-brungle.pages.dev";
+}
+
+function openGameContainer() {
+  // stufff will go here soon
+}
+
+function openTimetable() {
+  window.location.href = "https://timetable-brungle.pages.dev";
+}
+
+const gptConnect = document.querySelector("#gptConnect");
+
+gptConnect.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    const message = gptConnect.value;
+
+    switchChat("ai", "chatgptAI", "ChatGPT");
+    const messageInput = document.getElementById("message-input");
+    messageInput.value = message;
+    messageInput.focus();
+
+    const enterEvent = new KeyboardEvent("keypress", {
+      key: "Enter",
+      code: "Enter",
+      keyCode: 13,
+      which: 13,
+      bubbles: true,
+      cancelable: true
+    });
+    messageInput.dispatchEvent(enterEvent);
+
+    toggleHomepage();
+    ChatExpansion();
+  }
+});
+
+const brungleSearchInput = document.getElementById("search-brungle");
+brungleSearchInput.addEventListener("keydown", function (e) {
+  if (e.key === "Enter" || e.keyCode === 13) {
+    const queryForBrungle = brungleSearchInput.value.trim();
+    window.location.href =
+      "https://testing-bruh-brungle.pages.dev/#" + queryForBrungle;
+  }
+});
+
+//
+const gameMenur = document.querySelector(".gameMenuContainer");
+
+if (gameMenur) {
+  document.body.appendChild(gameMenur);
+} else {
+  console.warn("No element with class .gameMenuContainer found!");
+}
+function setupTextFormattingShortcuts() {
+  const messageInput = document.getElementById("message-input");
+
+  messageInput.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey) {
+      const startPos = messageInput.selectionStart;
+      const endPos = messageInput.selectionEnd;
+      const selectedText = messageInput.value.substring(startPos, endPos);
+
+      if (selectedText.length > 0) {
+        let newValue;
+
+        switch (e.key.toLowerCase()) {
+          case "b":
+            e.preventDefault();
+            newValue =
+              messageInput.value.substring(0, startPos) +
+              "<b>" +
+              selectedText +
+              "</b>" +
+              messageInput.value.substring(endPos);
+            break;
+          case "i":
+            e.preventDefault();
+            newValue =
+              messageInput.value.substring(0, startPos) +
+              "<i>" +
+              selectedText +
+              "</i>" +
+              messageInput.value.substring(endPos);
+            break;
+          case "u":
+            e.preventDefault();
+            newValue =
+              messageInput.value.substring(0, startPos) +
+              "<u>" +
+              selectedText +
+              "</u>" +
+              messageInput.value.substring(endPos);
+            break;
+          default:
+            return;
+        }
+
+        messageInput.value = newValue;
+
+        const newCursorPos = endPos + 7;
+        messageInput.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }
+  });
+}
+
+setupTextFormattingShortcuts();
+
+function downloadGame() {
+  alert("Games will need to be downloaded by the way you know how.");
+  // window.location.href = "https://forms.gle/47uBSycWofmMQDPa6";
+}
+
+function playGame(game) {
+  console.log(game);
+  if (game === "Snakes") {
+    window.open("../Games/Fading Snakes/snake.html", "_blank");
+  }
+  if (game === "Dino") {
+    window.open("../Games/Dinosaur Game/dinosaur.html", "_blank");
+  }
+  if (game === "Mario") {
+    window.open("../Games/MARIO/index.html", "_blank");
+  }
+  if (game === "PacMan") {
+    window.open("../Games/Pacman/Pacman.html", "_blank");
+  }
+  if (game === "Emulator") {
+    window.open("../Games/GBA Emulation/gbajs2-master/index.html", "_blank");
+  }
+  if (game === "Tetris") {
+    window.open("../Games/Tetris//tetris.html", "_blank");
+  }
+}
+
+function moveElementsToBody() {
+  const gameMenuContainer = document.querySelector(".gameMenuContainer");
+  const homePage = document.querySelector(".homePage");
+
+  const car = document.body;
+  if (car.classList.contains === "hidden") {
+  } else {
+    if (gameMenuContainer) {
+      car.appendChild(gameMenuContainer);
+    }
+
+    if (homePage) {
+      car.appendChild(homePage);
+    }
+  }
+}
